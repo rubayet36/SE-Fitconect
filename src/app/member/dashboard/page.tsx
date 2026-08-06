@@ -90,6 +90,7 @@ export default async function MemberDashboard() {
               { href: '/member/request', label: 'Request Plan', icon: '📋', desc: 'Get a trainer' },
               { href: '/member/my-plan', label: 'My Workout', icon: '💪', desc: 'View routine' },
               { href: '/member/diet', label: 'Diet Chart', icon: '🥗', desc: 'See nutrition' },
+              { href: '/member/progress', label: 'Progress Log', icon: '📈', desc: 'Weight & PRs' },
               { href: '/member/explore', label: 'Exercise Library', icon: '🔍', desc: 'Browse exercises' },
               { href: '/member/bookmarks', label: 'Bookmarks', icon: '🔖', desc: 'Saved exercises' },
             ].map(action => (

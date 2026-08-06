@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { LogOut, Menu, X, LayoutDashboard, Dumbbell, Salad, Search, Bookmark, ClipboardList, LayoutGrid, ChefHat, FileText, Megaphone, Crown, UserPlus, Clock } from 'lucide-react'
+import { LogOut, Menu, X, LayoutDashboard, Dumbbell, Salad, Search, Bookmark, ClipboardList, LayoutGrid, ChefHat, FileText, Megaphone, Crown, UserPlus, Clock, TrendingUp } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
@@ -14,6 +14,7 @@ const memberNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/member/dashboard', icon: '🏠', lucide: LayoutDashboard },
   { label: 'My Plan', href: '/member/my-plan', icon: '💪', lucide: Dumbbell },
   { label: 'Diet', href: '/member/diet', icon: '🥗', lucide: Salad },
+  { label: 'Progress Log', href: '/member/progress', icon: '📈', lucide: TrendingUp },
   { label: 'Explore', href: '/member/explore', icon: '🔍', lucide: Search },
   { label: 'Bookmarks', href: '/member/bookmarks', icon: '🔖', lucide: Bookmark },
   { label: 'Request Plan', href: '/member/request', icon: '📋', lucide: ClipboardList },
