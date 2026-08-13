@@ -135,7 +135,7 @@ erDiagram
 
 ### 1. Clone the Repository & Install Dependencies
 ```bash
-git clone https://github.com/rubayet36/SE-Fitconnect.git
+git clone https://github.com/rubayet36/Fitconnect.git
 cd Fitconnect
 npm install
 ```
