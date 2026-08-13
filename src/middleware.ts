@@ -33,16 +33,36 @@ export async function middleware(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    const redirectTo = '/member/dashboard'
+    const role = profile?.role
+    const redirectTo = role === 'owner'
+      ? '/owner/dashboard'
+      : role === 'trainer'
+      ? '/trainer/dashboard'
+      : '/member/dashboard'
     return NextResponse.redirect(new URL(redirectTo, request.url))
   }
 
   // Protected routes: redirect if not logged in
   if (!user && (
     pathname.startsWith('/member') ||
+    pathname.startsWith('/trainer') ||
+    pathname.startsWith('/owner') ||
     pathname.startsWith('/setup-profile')
   )) {
     return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // Role guard: owner should not access /trainer or /member routes
+  if (user && (pathname.startsWith('/trainer') || pathname.startsWith('/member'))) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.role === 'owner') {
+      return NextResponse.redirect(new URL('/owner/dashboard', request.url))
+    }
   }
 
   return supabaseResponse
