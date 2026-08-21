@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { searchExercises, getBodyParts, getExercisesByBodyPart, type Exercise } from '@/lib/exercisedb'
 import { useQuery } from '@tanstack/react-query'
@@ -8,7 +9,7 @@ import { toast } from 'sonner'
 import {
   Plus, Trash2, ChevronDown, ChevronUp, Search, X,
   Dumbbell, User, CheckCircle2, Save,
-  BookOpen, Zap, Copy, ArrowRight, FileText, Target,
+  BookOpen, Zap, Copy, ArrowRight, FileText, Target, ExternalLink,
 } from 'lucide-react'
 import Image from 'next/image'
 
@@ -469,6 +470,13 @@ function TemplateCard({ template, members, onDelete, onUpdate }: {
             <span className="text-xs text-zinc-700 hidden sm:block">
               {new Date(template.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
+            <Link
+              href={`/trainer/workout-builder?templateId=${template.id}`}
+              className="px-3 py-1.5 text-xs font-bold text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-600 hover:text-white transition-all flex items-center gap-1.5"
+              title="Open and customize in Workout Builder"
+            >
+              <ExternalLink size={12} /> <span className="hidden sm:inline">Builder</span>
+            </Link>
             <button onClick={() => setShowBuilder(true)}
               className="px-3 py-1.5 text-xs font-bold text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-600 hover:text-white transition-all flex items-center gap-1.5">
               <Dumbbell size={12} /> Edit
@@ -614,10 +622,19 @@ export default function TemplatesPage() {
           <h1 className="text-2xl lg:text-3xl font-black text-white mt-1">Routine Templates</h1>
           <p className="text-zinc-500 text-sm mt-1">Save your best plans as reusable templates — apply to any member with one click.</p>
         </div>
-        <button onClick={() => setShowCreate(!showCreate)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-sm rounded-xl transition-all shrink-0 hover:shadow-[0_0_20px_rgba(225,29,29,0.3)]">
-          <Plus size={15} /> New Template
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href="/trainer/workout-builder"
+            className="flex items-center gap-2 px-4 py-2.5 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 text-zinc-300 hover:text-white font-bold text-sm rounded-xl transition-all"
+          >
+            <Dumbbell size={15} className="text-red-500" />
+            <span className="hidden sm:inline">Workout Builder</span>
+          </Link>
+          <button onClick={() => setShowCreate(!showCreate)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-sm rounded-xl transition-all shrink-0 hover:shadow-[0_0_20px_rgba(225,29,29,0.3)]">
+            <Plus size={15} /> New Template
+          </button>
+        </div>
       </div>
 
       {/* Stats strip */}

@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import {
   Search, Plus, Trash2, Save, ChevronDown, ChevronUp,
   Dumbbell, Info, X, Filter, User, Layers,
-  GripVertical, BookOpen, Target, Zap, CheckCircle2,
+  BookOpen, Target, Zap, CheckCircle2, Bookmark, FolderDown,
 } from 'lucide-react'
 import Image from 'next/image'
 
@@ -29,7 +29,287 @@ interface DayPlan {
   [day: string]: DayExercise[]
 }
 
+interface RoutineTemplate {
+  id: string
+  name: string
+  description: string | null
+  exercises: any[]
+  created_at: string
+}
+
 const DEFAULT_DAYS = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6']
+
+// ─────────────────────────────────────────────
+// Save As Template Modal
+// ─────────────────────────────────────────────
+
+function SaveTemplateModal({
+  plan,
+  activeDay,
+  onClose,
+  onSaved,
+}: {
+  plan: DayPlan
+  activeDay: string
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const supabase = createClient()
+  const [templateName, setTemplateName] = useState('')
+  const [templateDesc, setTemplateDesc] = useState('')
+  const [scope, setScope] = useState<'day' | 'all'>('day')
+  const [saving, setSaving] = useState(false)
+
+  const activeDayExercises = plan[activeDay] || []
+  const allExercises = Object.values(plan).flat()
+  const targetExercises = scope === 'day' ? activeDayExercises : allExercises
+
+  async function handleSave() {
+    if (!templateName.trim()) {
+      toast.error('Please enter a template name')
+      return
+    }
+    if (targetExercises.length === 0) {
+      toast.error('No exercises to save in this template')
+      return
+    }
+
+    setSaving(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const exercisesPayload = targetExercises.map(item => ({
+      id: item.exercise.id,
+      name: item.exercise.name,
+      bodyPart: item.exercise.bodyPart,
+      equipment: item.exercise.equipment,
+      target: item.exercise.target,
+      secondaryMuscles: item.exercise.secondaryMuscles || [],
+      instructions: item.exercise.instructions || [],
+      gifUrl: item.exercise.gifUrl || '',
+      images: item.exercise.images || [],
+      sets: item.sets,
+      reps: item.reps,
+      notes: item.notes,
+    }))
+
+    const { error } = await supabase.from('routine_templates').insert({
+      trainer_id: user.id,
+      name: templateName.trim(),
+      description: templateDesc.trim() || null,
+      exercises: exercisesPayload,
+    })
+
+    if (error) {
+      toast.error('Failed to save template: ' + error.message)
+    } else {
+      toast.success(`✅ Template "${templateName}" saved with ${targetExercises.length} exercises!`)
+      onSaved()
+    }
+    setSaving(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-black text-white flex items-center gap-2">
+            <Bookmark size={18} className="text-red-500" /> Save as Template
+          </h2>
+          <button onClick={onClose} className="p-1.5 text-zinc-500 hover:text-white rounded-lg hover:bg-zinc-900 transition-all">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1.5">Template Name *</label>
+            <input
+              value={templateName}
+              onChange={e => setTemplateName(e.target.value)}
+              placeholder="e.g. Hypertrophy Push Day"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-red-600 transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1.5">Description (Optional)</label>
+            <input
+              value={templateDesc}
+              onChange={e => setTemplateDesc(e.target.value)}
+              placeholder="e.g. Focus on chest & triceps progressive overload"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-red-600 transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1.5">Template Scope</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setScope('day')}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border ${
+                  scope === 'day'
+                    ? 'bg-red-600/15 border-red-600/40 text-red-400'
+                    : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                {activeDay} ({activeDayExercises.length} ex)
+              </button>
+              <button
+                type="button"
+                onClick={() => setScope('all')}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border ${
+                  scope === 'all'
+                    ? 'bg-red-600/15 border-red-600/40 text-red-400'
+                    : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                All Days ({allExercises.length} ex)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-2 pt-2">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 border border-zinc-800 text-zinc-500 hover:text-white rounded-xl text-xs font-bold transition-all"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || !templateName.trim() || targetExercises.length === 0}
+            className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 disabled:bg-zinc-800 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2"
+          >
+            {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Bookmark size={13} /> Save Template</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────
+// Load Template Modal
+// ─────────────────────────────────────────────
+
+function LoadTemplateModal({
+  activeDay,
+  onClose,
+  onLoad,
+}: {
+  activeDay: string
+  onClose: () => void
+  onLoad: (exercises: DayExercise[]) => void
+}) {
+  const supabase = createClient()
+  const [templates, setTemplates] = useState<RoutineTemplate[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchTemplates() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase
+        .from('routine_templates')
+        .select('*')
+        .eq('trainer_id', user.id)
+        .order('created_at', { ascending: false })
+      setTemplates((data as RoutineTemplate[]) || [])
+      setLoading(false)
+    }
+    fetchTemplates()
+  }, [supabase])
+
+  function handleSelectTemplate(tpl: RoutineTemplate) {
+    if (!tpl.exercises || tpl.exercises.length === 0) {
+      toast.error('This template is empty')
+      return
+    }
+
+    const converted: DayExercise[] = tpl.exercises.map((ex: any) => ({
+      tempId: Math.random().toString(36).slice(2),
+      exercise: {
+        id: ex.id || ex.exercise_db_id || ex.exercise?.id || String(Math.random()),
+        name: ex.name || ex.exercise_name || ex.exercise?.name || 'Exercise',
+        bodyPart: ex.bodyPart || ex.exercise?.bodyPart || '',
+        equipment: ex.equipment || ex.exercise?.equipment || '',
+        target: ex.target || ex.exercise?.target || '',
+        secondaryMuscles: ex.secondaryMuscles || ex.exercise?.secondaryMuscles || [],
+        instructions: ex.instructions || ex.exercise?.instructions || [],
+        gifUrl: ex.gifUrl || ex.exercise?.gifUrl || '',
+        images: ex.images || ex.exercise?.images || [],
+      },
+      sets: ex.sets || 3,
+      reps: ex.reps || '10',
+      notes: ex.notes || '',
+    }))
+
+    onLoad(converted)
+    toast.success(`Loaded ${converted.length} exercises from "${tpl.name}" into ${activeDay}!`)
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-lg w-full max-h-[85vh] flex flex-col p-6 space-y-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between shrink-0">
+          <div>
+            <h2 className="text-lg font-black text-white flex items-center gap-2">
+              <FolderDown size={18} className="text-red-500" /> Load Template
+            </h2>
+            <p className="text-xs text-zinc-500 mt-0.5">Insert reusable routine into <span className="text-red-400 font-bold">{activeDay}</span></p>
+          </div>
+          <button onClick={onClose} className="p-1.5 text-zinc-500 hover:text-white rounded-lg hover:bg-zinc-900 transition-all">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
+          {loading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-16 bg-zinc-900/60 rounded-2xl animate-pulse" />
+            ))
+          ) : templates.length === 0 ? (
+            <div className="text-center py-10">
+              <BookOpen size={30} className="mx-auto text-zinc-700 mb-2" />
+              <p className="text-sm font-semibold text-zinc-400">No saved templates found</p>
+              <p className="text-xs text-zinc-600 mt-1">Build a routine and click &#34;Save as Template&#34; to reuse it anytime.</p>
+            </div>
+          ) : (
+            templates.map(tpl => {
+              const exCount = tpl.exercises?.length || 0
+              return (
+                <div
+                  key={tpl.id}
+                  className="bg-zinc-900 border border-zinc-800/80 hover:border-zinc-700 rounded-2xl p-3.5 flex items-center justify-between gap-3 group transition-all"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-sm font-black text-white truncate">{tpl.name}</h4>
+                      <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-bold">
+                        {exCount} exercise{exCount !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    {tpl.description && <p className="text-xs text-zinc-500 mt-0.5 truncate">{tpl.description}</p>}
+                  </div>
+                  <button
+                    onClick={() => handleSelectTemplate(tpl)}
+                    className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5"
+                  >
+                    <Plus size={12} /> Insert
+                  </button>
+                </div>
+              )
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ─────────────────────────────────────────────
 // Exercise Detail Modal (with GIF + instructions)
@@ -178,33 +458,44 @@ function ExerciseLibraryCard({ exercise, onAdd, onPreview }: {
           </p>
         </button>
         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-          <span className="text-[10px] text-zinc-600 capitalize bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800">
-            {exercise.bodyPart}
-          </span>
-          <span className="text-[10px] text-zinc-700 capitalize">
-            {exercise.equipment}
-          </span>
+          <span className="text-[10px] text-zinc-500 capitalize">{exercise.bodyPart}</span>
+          <span className="text-zinc-700 text-[10px]">·</span>
+          <span className="text-[10px] text-zinc-500 capitalize">{exercise.equipment}</span>
         </div>
       </div>
 
-      <button
-        onClick={onAdd}
-        title="Add to plan"
-        className="shrink-0 w-8 h-8 bg-red-600/15 border border-red-700/30 rounded-xl text-red-400
-          hover:bg-red-600 hover:text-white hover:border-red-600 transition-all flex items-center justify-center
-          lg:opacity-0 lg:group-hover:opacity-100 opacity-100"
-      >
-        <Plus size={14} />
-      </button>
+      <div className="flex items-center gap-1 shrink-0">
+        <button
+          onClick={onPreview}
+          className="p-2 rounded-xl text-zinc-600 hover:text-zinc-300 hover:bg-zinc-900 transition-all"
+          title="View full instructions"
+        >
+          <Info size={14} />
+        </button>
+        <button
+          onClick={onAdd}
+          className="w-8 h-8 rounded-xl bg-red-600 hover:bg-red-500 text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-[0_0_10px_rgba(225,29,29,0.3)]"
+          title="Add to active day"
+        >
+          <Plus size={15} />
+        </button>
+      </div>
     </div>
   )
 }
 
 // ─────────────────────────────────────────────
-// Plan Exercise Row
+// Plan Exercise Row (with collapse/expand)
 // ─────────────────────────────────────────────
 
-function PlanExerciseRow({ item, day, index, onRemove, onUpdate, onPreview }: {
+function PlanExerciseRow({
+  item,
+  day,
+  index,
+  onRemove,
+  onUpdate,
+  onPreview,
+}: {
   item: DayExercise
   day: string
   index: number
@@ -215,75 +506,81 @@ function PlanExerciseRow({ item, day, index, onRemove, onUpdate, onPreview }: {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className="group bg-zinc-950 border border-zinc-800/80 rounded-2xl overflow-hidden hover:border-zinc-700 transition-all">
+    <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl overflow-hidden hover:border-zinc-700 transition-all">
       <div className="flex items-center gap-3 p-3">
-        <div className="flex flex-col items-center gap-0.5 shrink-0">
-          <GripVertical size={14} className="text-zinc-700 group-hover:text-zinc-500 transition-colors cursor-grab" />
-          <span className="text-[10px] text-zinc-700 font-bold">{index + 1}</span>
-        </div>
+        <span className="w-5 h-5 rounded-full bg-red-600/15 border border-red-600/30 text-red-400 text-[10px] font-black flex items-center justify-center shrink-0">
+          {index + 1}
+        </span>
 
-        <button onClick={onPreview} className="relative w-11 h-11 bg-zinc-900 rounded-xl overflow-hidden shrink-0 border border-zinc-800 hover:border-red-700/50 transition-all">
+        <button onClick={onPreview} className="relative w-10 h-10 bg-zinc-800 rounded-xl overflow-hidden shrink-0 border border-zinc-700 hover:border-zinc-500 transition-all">
           {item.exercise.gifUrl ? (
             <Image src={item.exercise.gifUrl} alt={item.exercise.name} fill unoptimized className="object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-lg">💪</div>
+            <div className="w-full h-full flex items-center justify-center text-sm">💪</div>
           )}
         </button>
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpanded(!expanded)}>
           <p className="text-xs font-bold text-white capitalize truncate">{item.exercise.name}</p>
-          <p className="text-[10px] text-zinc-600 capitalize mt-0.5">{item.exercise.bodyPart}</p>
+          <p className="text-[10px] text-zinc-500 capitalize">{item.exercise.bodyPart} · {item.exercise.equipment}</p>
         </div>
 
-        <div className="flex items-center gap-1.5 text-xs text-zinc-500 shrink-0">
+        <div className="flex items-center gap-1.5 text-xs shrink-0 cursor-pointer" onClick={() => setExpanded(!expanded)}>
           <span className="font-black text-white">{item.sets}</span>
-          <span className="text-zinc-700">×</span>
+          <span className="text-zinc-600">×</span>
           <span className="font-black text-white">{item.reps}</span>
         </div>
 
         <button
           onClick={() => setExpanded(!expanded)}
-          className="p-1.5 rounded-lg text-zinc-700 hover:text-zinc-400 hover:bg-zinc-900 transition-all shrink-0"
+          className="p-1.5 rounded-lg text-zinc-600 hover:text-white hover:bg-zinc-800 transition-all shrink-0"
         >
           {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
 
         <button
           onClick={onRemove}
-          className="p-1.5 rounded-lg text-zinc-700 hover:text-red-400 hover:bg-red-950/20 transition-all shrink-0"
+          className="p-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-950/20 transition-all shrink-0"
         >
           <Trash2 size={14} />
         </button>
       </div>
 
       {expanded && (
-        <div className="border-t border-zinc-800/60 p-3 space-y-3 bg-zinc-900/30">
+        <div className="border-t border-zinc-800 p-3 space-y-3 bg-zinc-950/60">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] text-zinc-600 uppercase tracking-widest font-bold">Sets</label>
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Sets</label>
               <input
-                type="number" min={1} max={20} value={item.sets}
+                type="number"
+                min={1}
+                max={20}
+                value={item.sets}
                 onChange={e => onUpdate('sets', parseInt(e.target.value) || 1)}
-                className="w-full mt-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-red-600 transition-colors"
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white text-xs font-bold focus:outline-none focus:border-red-600 transition-colors"
               />
             </div>
             <div>
-              <label className="text-[10px] text-zinc-600 uppercase tracking-widest font-bold">Reps</label>
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Reps / Duration</label>
               <input
-                type="text" placeholder="e.g. 10 or 8-12" value={item.reps}
+                type="text"
+                placeholder="e.g. 10 or 8-12 or 45s"
+                value={item.reps}
                 onChange={e => onUpdate('reps', e.target.value)}
-                className="w-full mt-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-red-600 transition-colors"
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white text-xs font-bold focus:outline-none focus:border-red-600 transition-colors"
               />
             </div>
           </div>
           <div>
-            <label className="text-[10px] text-zinc-600 uppercase tracking-widest font-bold flex items-center gap-1">
-              <Zap size={10} /> Coach Execution Notes
+            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1 flex items-center gap-1">
+              <Zap size={10} className="text-yellow-500" /> Coach Execution Notes
             </label>
             <input
-              type="text" placeholder="e.g. Keep core tight, slow eccentric…" value={item.notes}
+              type="text"
+              placeholder="e.g. Control eccentric tempo, 90s rest, keep elbows tucked…"
+              value={item.notes}
               onChange={e => onUpdate('notes', e.target.value)}
-              className="w-full mt-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-red-600 transition-colors"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-red-600 transition-colors"
             />
           </div>
         </div>
@@ -293,12 +590,13 @@ function PlanExerciseRow({ item, day, index, onRemove, onUpdate, onPreview }: {
 }
 
 // ─────────────────────────────────────────────
-// Main Inner Component
+// Inner Page Component
 // ─────────────────────────────────────────────
 
 function WorkoutBuilderInner() {
   const searchParams = useSearchParams()
   const preselectedMemberId = searchParams.get('member') || ''
+  const initialTemplateId = searchParams.get('templateId') || ''
   const supabase = createClient()
 
   const [query, setQuery] = useState('')
@@ -314,6 +612,9 @@ function WorkoutBuilderInner() {
   const [plan, setPlan] = useState<DayPlan>({})
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+
+  const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false)
+  const [showLoadTemplateModal, setShowLoadTemplateModal] = useState(false)
 
   const [mobilePanel, setMobilePanel] = useState<'library' | 'plan'>('library')
   const [previewExercise, setPreviewExercise] = useState<Exercise | null>(null)
@@ -350,6 +651,40 @@ function WorkoutBuilderInner() {
     }
     loadMembers()
   }, [supabase])
+
+  // Load template from URL if present
+  useEffect(() => {
+    if (!initialTemplateId) return
+    async function loadInitialTemplate() {
+      const { data } = await supabase
+        .from('routine_templates')
+        .select('*')
+        .eq('id', initialTemplateId)
+        .single()
+      if (data && data.exercises && data.exercises.length > 0) {
+        const converted: DayExercise[] = data.exercises.map((ex: any) => ({
+          tempId: Math.random().toString(36).slice(2),
+          exercise: {
+            id: ex.id || String(Math.random()),
+            name: ex.name || 'Exercise',
+            bodyPart: ex.bodyPart || '',
+            equipment: ex.equipment || '',
+            target: ex.target || '',
+            secondaryMuscles: ex.secondaryMuscles || [],
+            instructions: ex.instructions || [],
+            gifUrl: ex.gifUrl || '',
+            images: ex.images || [],
+          },
+          sets: ex.sets || 3,
+          reps: ex.reps || '10',
+          notes: ex.notes || '',
+        }))
+        setPlan(prev => ({ ...prev, [activeDay]: converted }))
+        toast.success(`Template "${data.name}" loaded into ${activeDay}!`)
+      }
+    }
+    loadInitialTemplate()
+  }, [initialTemplateId, supabase, activeDay])
 
   // Debounce search
   useEffect(() => {
@@ -444,6 +779,26 @@ function WorkoutBuilderInner() {
           exercise={previewExercise}
           onClose={() => setPreviewExercise(null)}
           onAdd={previewContext === 'library' ? () => addExercise(previewExercise) : undefined}
+        />
+      )}
+
+      {showSaveTemplateModal && (
+        <SaveTemplateModal
+          plan={plan}
+          activeDay={activeDay}
+          onClose={() => setShowSaveTemplateModal(false)}
+          onSaved={() => setShowSaveTemplateModal(false)}
+        />
+      )}
+
+      {showLoadTemplateModal && (
+        <LoadTemplateModal
+          activeDay={activeDay}
+          onClose={() => setShowLoadTemplateModal(false)}
+          onLoad={(loadedExercises) => {
+            setPlan(prev => ({ ...prev, [activeDay]: [...(prev[activeDay] || []), ...loadedExercises] }))
+            setSaved(false)
+          }}
         />
       )}
 
@@ -553,9 +908,35 @@ function WorkoutBuilderInner() {
                   {members.map(m => <option key={m.id} value={m.id}>{m.full_name || m.email}</option>)}
                 </select>
               </div>
-              <span className="text-xs text-zinc-600 hidden sm:flex items-center gap-1 shrink-0">
+
+              {/* Template Actions Buttons */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowLoadTemplateModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 text-zinc-300 hover:text-white text-xs font-bold rounded-xl transition-all"
+                  title="Load a saved routine template into this day"
+                >
+                  <FolderDown size={13} className="text-red-400" />
+                  <span className="hidden sm:inline">Load Template</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowSaveTemplateModal(true)}
+                  disabled={totalExercises === 0}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 disabled:opacity-40 text-zinc-300 hover:text-white text-xs font-bold rounded-xl transition-all"
+                  title="Save current workout routine as a reusable template"
+                >
+                  <Bookmark size={13} className="text-red-400" />
+                  <span className="hidden sm:inline">Save Template</span>
+                </button>
+              </div>
+
+              <span className="text-xs text-zinc-600 hidden xl:flex items-center gap-1 shrink-0">
                 <Layers size={12} /> {totalExercises} exercises · {activeDaysCount} days
               </span>
+
               <button onClick={savePlan} disabled={saving}
                 className={`flex items-center gap-2 px-4 py-2 font-bold text-sm rounded-xl transition-all shrink-0 ${
                   saved
@@ -604,8 +985,8 @@ function WorkoutBuilderInner() {
               <div className="flex flex-col items-center justify-center h-full text-center py-12">
                 <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-zinc-800 flex items-center justify-center text-3xl mb-5">+</div>
                 <p className="text-zinc-500 font-semibold text-sm">{activeDay} is empty</p>
-                <p className="text-zinc-700 text-xs mt-1 max-w-[200px]">
-                  Search the library on the left and click <span className="text-red-500">+</span> to add exercises
+                <p className="text-zinc-700 text-xs mt-1 max-w-[240px]">
+                  Search exercises on the left, or click <button onClick={() => setShowLoadTemplateModal(true)} className="text-red-400 font-bold hover:underline">Load Template</button> to insert a saved routine.
                 </p>
               </div>
             ) : (
