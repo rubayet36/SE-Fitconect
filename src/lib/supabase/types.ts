@@ -11,6 +11,8 @@ export type Database = {
           role: 'member' | 'trainer' | 'owner'
           avatar_url: string | null
           phone: string | null
+          user_id_code: string | null
+          push_subscription: Json | null
           created_at: string
           updated_at: string
         }
@@ -18,9 +20,11 @@ export type Database = {
           id: string
           email: string
           full_name?: string | null
-          role?: 'member' | 'trainer'
+          role?: 'member' | 'trainer' | 'owner'
           avatar_url?: string | null
           phone?: string | null
+          user_id_code?: string | null
+          push_subscription?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -28,9 +32,11 @@ export type Database = {
           id?: string
           email?: string
           full_name?: string | null
-          role?: 'member' | 'trainer'
+          role?: 'member' | 'trainer' | 'owner'
           avatar_url?: string | null
           phone?: string | null
+          user_id_code?: string | null
+          push_subscription?: Json | null
           updated_at?: string
         }
       }

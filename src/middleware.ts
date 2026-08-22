@@ -33,13 +33,18 @@ export async function middleware(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    const redirectTo = '/member/dashboard'
+    let redirectTo = '/member/dashboard'
+    if (profile?.role === 'trainer') redirectTo = '/trainer/diet-generator'
+    else if (profile?.role === 'owner') redirectTo = '/owner/dashboard'
+
     return NextResponse.redirect(new URL(redirectTo, request.url))
   }
 
   // Protected routes: redirect if not logged in
   if (!user && (
     pathname.startsWith('/member') ||
+    pathname.startsWith('/trainer') ||
+    pathname.startsWith('/owner') ||
     pathname.startsWith('/setup-profile')
   )) {
     return NextResponse.redirect(new URL('/login', request.url))

@@ -61,7 +61,10 @@ export default function LoginPage() {
       .eq('id', user.id)
       .single()
 
-    const dest = '/member/dashboard'
+    let dest = '/member/dashboard'
+    if (profile?.role === 'trainer') dest = '/trainer/diet-generator'
+    else if (profile?.role === 'owner') dest = '/owner/dashboard'
+
     router.push(dest)
     router.refresh()
   }
