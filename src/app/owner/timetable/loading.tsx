@@ -14,7 +14,21 @@ export default function OwnerTimetableLoading() {
         </div>
       </div>
 
-
+      {/* Timetable rows */}
+      <div className="space-y-3">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="bg-zinc-950 border border-zinc-800 rounded-2xl p-5 flex items-center gap-4">
+            <div className="flex-1 space-y-2">
+              <div className="h-5 bg-zinc-800 rounded w-40" />
+              <div className="h-3 bg-zinc-800 rounded w-48" />
+            </div>
+            <div className="flex gap-2">
+              <div className="h-8 w-8 bg-zinc-800 rounded-lg" />
+              <div className="h-8 w-8 bg-zinc-800 rounded-lg" />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
