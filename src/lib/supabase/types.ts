@@ -11,6 +11,7 @@ export type Database = {
           role: 'member' | 'trainer' | 'owner'
           avatar_url: string | null
           phone: string | null
+          push_subscription?: Json | null
           created_at: string
           updated_at: string
         }
@@ -18,9 +19,10 @@ export type Database = {
           id: string
           email: string
           full_name?: string | null
-          role?: 'member' | 'trainer'
+          role?: 'member' | 'trainer' | 'owner'
           avatar_url?: string | null
           phone?: string | null
+          push_subscription?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -28,11 +30,13 @@ export type Database = {
           id?: string
           email?: string
           full_name?: string | null
-          role?: 'member' | 'trainer'
+          role?: 'member' | 'trainer' | 'owner'
           avatar_url?: string | null
           phone?: string | null
+          push_subscription?: Json | null
           updated_at?: string
         }
+        Relationships: []
       }
       requests: {
         Row: {
@@ -60,6 +64,7 @@ export type Database = {
           notes?: string | null
           updated_at?: string
         }
+        Relationships: []
       }
       routines: {
         Row: {
@@ -94,6 +99,7 @@ export type Database = {
           notes?: string | null
           order_index?: number
         }
+        Relationships: []
       }
       diet_plans: {
         Row: {
@@ -131,6 +137,7 @@ export type Database = {
           fat_g?: number | null
           notes?: string | null
         }
+        Relationships: []
       }
       routine_templates: {
         Row: {
@@ -154,6 +161,7 @@ export type Database = {
           description?: string | null
           exercises?: Json
         }
+        Relationships: []
       }
       bookmarks: {
         Row: {
@@ -176,6 +184,141 @@ export type Database = {
           exercise_name: string
           exercise_gif: string | null
         }>
+        Relationships: []
+      }
+      gym_notices: {
+        Row: {
+          id: string
+          title: string
+          body: string
+          type: 'info' | 'warning' | 'success'
+          created_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          body: string
+          type: 'info' | 'warning' | 'success'
+          created_by: string
+          created_at?: string
+        }
+        Update: {
+          title?: string
+          body?: string
+          type?: 'info' | 'warning' | 'success'
+          created_by?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      gym_timetable: {
+        Row: {
+          id: string
+          day_label: string
+          open_time: string
+          close_time: string
+          is_closed: boolean
+          display_order: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          day_label: string
+          open_time?: string
+          close_time?: string
+          is_closed?: boolean
+          display_order?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          day_label?: string
+          open_time?: string
+          close_time?: string
+          is_closed?: boolean
+          display_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      member_body_metrics: {
+        Row: {
+          id: string
+          member_id: string
+          recorded_at: string
+          weight_kg: number | null
+          body_fat_pct: number | null
+          chest_cm: number | null
+          waist_cm: number | null
+          biceps_cm: number | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          member_id: string
+          recorded_at?: string
+          weight_kg?: number | null
+          body_fat_pct?: number | null
+          chest_cm?: number | null
+          waist_cm?: number | null
+          biceps_cm?: number | null
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          member_id?: string
+          recorded_at?: string
+          weight_kg?: number | null
+          body_fat_pct?: number | null
+          chest_cm?: number | null
+          waist_cm?: number | null
+          biceps_cm?: number | null
+          notes?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      member_workout_logs: {
+        Row: {
+          id: string
+          member_id: string
+          logged_at: string
+          exercise_name: string
+          sets_completed: number
+          reps_completed: string
+          weight_kg: number | null
+          is_pr: boolean
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          member_id: string
+          logged_at?: string
+          exercise_name: string
+          sets_completed?: number
+          reps_completed?: string
+          weight_kg?: number | null
+          is_pr?: boolean
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          member_id?: string
+          logged_at?: string
+          exercise_name?: string
+          sets_completed?: number
+          reps_completed?: string
+          weight_kg?: number | null
+          is_pr?: boolean
+          notes?: string | null
+          created_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
