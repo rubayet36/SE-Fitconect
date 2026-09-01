@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { PushOptIn } from '@/components/PushOptIn'
 import { MemberIdGate } from '@/components/MemberIdGate'
 import { DashboardHeader } from '@/components/DashboardHeader'
+import { GymHoursCard } from '@/components/GymHoursCard'
+import type { GymHourRow } from '@/components/GymHoursCard'
 
 export default async function MemberDashboard() {
   const supabase = await createClient()
@@ -19,7 +21,7 @@ export default async function MemberDashboard() {
   const myRequests: any[] = (requestsRes.data as any) || []
   const routines: any[] = (routinesRes.data as any) || []
   const gymNotices: { id: string; title: string; body: string; type: 'info' | 'warning' | 'success'; created_at: string }[] = (noticesRes.data as any) || []
-  const gymHours: { id: string; day_label: string; open_time: string; close_time: string; is_closed: boolean }[] = (timetableRes.data as any) || []
+  const gymHours: GymHourRow[] = (timetableRes.data as any) || []
 
   const uniqueDays = [...new Set(routines.map(r => r.day_label))]
 
@@ -107,23 +109,7 @@ export default async function MemberDashboard() {
         {/* Right column */}
         <div className="space-y-4">
           {/* Gym Hours */}
-          <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-5">
-            <h2 className="text-sm font-bold text-zinc-400 tracking-widest uppercase flex items-center gap-2 mb-4">
-              <span className="w-4 h-[2px] bg-red-600" /> Gym Hours
-            </h2>
-            <div className="space-y-3">
-              {gymHours.length > 0 ? gymHours.map(h => (
-                <div key={h.id} className="flex flex-col gap-0.5">
-                  <span className="text-xs text-zinc-500">{h.day_label}</span>
-                  <span className="text-sm font-semibold text-white">
-                    {h.is_closed ? '🔒 Closed' : `${h.open_time} – ${h.close_time}`}
-                  </span>
-                </div>
-              )) : (
-                <p className="text-xs text-zinc-600">Hours not available</p>
-              )}
-            </div>
-          </div>
+          <GymHoursCard initialData={gymHours} />
 
           {/* Recent Requests */}
           <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-5">

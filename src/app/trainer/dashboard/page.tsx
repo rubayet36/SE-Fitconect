@@ -23,6 +23,7 @@ import {
   TrendingUp,
   X,
 } from 'lucide-react'
+import { GymHoursCard } from '@/components/GymHoursCard'
 
 // ──────────────────────────────────────────────
 // Types
@@ -652,7 +653,8 @@ export default function TrainerDashboard() {
         })}
       </div>
 
-      {/* View switcher + Search + Filter */}
+      {/* Gym Hours strip */}
+      <GymHoursCard />
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950 shrink-0">
           <button
