@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { RefreshCw, Megaphone, Plus, Trash2, Info, AlertTriangle, CheckCircle2, X } from 'lucide-react'
 
+import { postNotice, deleteNotice } from '@/app/actions/notice-actions'
+
 type NoticeType = 'info' | 'warning' | 'success'
 
 interface Notice {
@@ -57,17 +59,9 @@ export default function OwnerBillboardPage() {
 
     setPosting(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { toast.error('Not authenticated'); return }
+      const res = await postNotice(title.trim(), body.trim(), noticeType)
 
-      const { error } = await supabase.from('gym_notices').insert({
-        title: title.trim(),
-        body: body.trim(),
-        type: noticeType,
-        created_by: user.id,
-      })
-
-      if (error) throw error
+      if (res.error) throw new Error(res.error)
 
       toast.success('Notice posted successfully!')
       setTitle('')
@@ -85,8 +79,9 @@ export default function OwnerBillboardPage() {
   async function handleDelete(id: string) {
     setDeleting(id)
     try {
-      const { error } = await supabase.from('gym_notices').delete().eq('id', id)
-      if (error) throw error
+      const res = await deleteNotice(id)
+      if (res.error) throw new Error(res.error)
+      
       toast.success('Notice deleted')
       setNotices(prev => prev.filter(n => n.id !== id))
     } catch (err: any) {
