@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { RefreshCw, Megaphone } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 
 type NoticeType = 'info' | 'warning' | 'success'
 
@@ -16,23 +17,19 @@ interface Notice {
 
 export default function TrainerBillboardPage() {
   const supabase = createClient()
-  const [notices, setNotices] = useState<Notice[]>([])
-  const [loading, setLoading] = useState(true)
 
-  const loadNotices = React.useCallback(async () => {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('gym_notices')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (!error) setNotices((data as Notice[]) || [])
-    setLoading(false)
-  }, [supabase])
-
-  useEffect(() => {
-    const init = async () => { await loadNotices() }
-    init()
-  }, [loadNotices])
+  const { data: notices = [], isLoading: loading, refetch, isRefetching } = useQuery({
+    queryKey: ['gym_notices'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('gym_notices')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+      return (data as Notice[]) || []
+    }
+  })
 
   const typeConfig = (type: NoticeType) =>
     type === 'success' ? 'bg-green-950/20 border-green-800/30' :
@@ -53,10 +50,11 @@ export default function TrainerBillboardPage() {
           <p className="text-zinc-500 text-sm mt-1">Owner announcements for all members</p>
         </div>
         <button
-          onClick={loadNotices}
+          onClick={() => refetch()}
           className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white hover:border-zinc-600 transition-all"
+          disabled={isRefetching}
         >
-          <RefreshCw size={16} />
+          <RefreshCw size={16} className={isRefetching ? 'animate-spin' : ''} />
         </button>
       </div>
 
