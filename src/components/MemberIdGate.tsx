@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { BadgeCheck, X } from 'lucide-react'
+import { BadgeCheck } from 'lucide-react'
 
 export function MemberIdGate() {
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const [show, setShow] = useState(false)
   const [memberIdCode, setMemberIdCode] = useState('')
   const [fullName, setFullName] = useState('')
@@ -28,7 +29,7 @@ export function MemberIdGate() {
       }
     }
     check()
-  }, [])
+  }, [supabase])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

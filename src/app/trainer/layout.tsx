@@ -14,7 +14,6 @@ export default async function TrainerLayout({ children }: { children: React.Reac
     .eq('id', user.id)
     .single() as any
 
-  if (profile?.role === 'owner') redirect('/owner/dashboard')
   if (profile?.role === 'member') redirect('/member/dashboard')
 
   return (

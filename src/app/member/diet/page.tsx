@@ -77,7 +77,7 @@ export default async function DietPage() {
               <h2 className="font-black text-white">Meal Schedule</h2>
             </div>
             <div className="divide-y divide-zinc-800/50">
-              {sorted?.map((meal: any, i: number) => (
+              {sorted?.map((meal: any) => (
                 <div key={meal.id} className="px-6 py-5 hover:bg-zinc-900/30 transition-colors">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
