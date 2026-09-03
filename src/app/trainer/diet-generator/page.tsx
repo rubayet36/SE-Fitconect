@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo, useTransition } from 'react'
+import { useState, useEffect, useMemo, useTransition, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import {
@@ -50,7 +51,7 @@ interface MemberRequest {
   created_at: string
 }
 
-type FitnessGoal = 'fat_loss' | 'maintenance' | 'muscle_gain'
+type FitnessGoal = 'fat_loss' | 'loss' | 'maintenance' | 'muscle_gain' | 'bulking'
 type ActivityLevel = 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extremely_active'
 type DietPreference = 'standard' | 'vegetarian' | 'vegan' | 'keto' | 'mediterranean' | 'pescatarian'
 type Gender = 'male' | 'female' | 'other'
@@ -439,12 +440,12 @@ export function calculateMacros({
   let proteinMultiplier = 2.0 // g per kg of bodyweight
   let fatPercentage = 0.25   // % of total calories
 
-  if (fitnessGoal === 'fat_loss') {
+  if (fitnessGoal === 'fat_loss' || fitnessGoal === 'loss') {
     // 20-22% Caloric Deficit
     calorieDelta = -Math.round(tdee * 0.22)
     proteinMultiplier = 2.2 // High protein to preserve muscle in deficit
     fatPercentage = 0.23    // Moderate-low fat
-  } else if (fitnessGoal === 'muscle_gain') {
+  } else if (fitnessGoal === 'muscle_gain' || fitnessGoal === 'bulking') {
     // 12-15% Caloric Surplus
     calorieDelta = Math.round(tdee * 0.14)
     proteinMultiplier = 2.0 // Optimal protein for hypertrophy
@@ -591,9 +592,11 @@ export function generateMealsFromMacros(
 
 // ── Main Page Component ───────────────────────────────────────────────
 
-export default function DietGeneratorPage() {
+function DietGeneratorContent() {
   const supabase = useMemo(() => createClient(), [])
   const [, startTransition] = useTransition()
+  const searchParams = useSearchParams()
+  const queryMemberId = searchParams.get('member')
 
   // Authenticated trainer state
   const [trainerUser, setTrainerUser] = useState<any>(null)
@@ -709,7 +712,7 @@ export default function DietGeneratorPage() {
         if (!memberErr && memberRows) {
           setMembers(memberRows)
           if (memberRows.length > 0) {
-            setSelectedMemberId(prev => prev || memberRows[0].id)
+            setSelectedMemberId(prev => prev || queryMemberId || memberRows[0].id)
           }
         }
 
@@ -733,6 +736,13 @@ export default function DietGeneratorPage() {
     }
     loadData()
   }, [supabase])
+
+  // ── Sync member ID from URL query if changed ────────────────────────
+  useEffect(() => {
+    if (queryMemberId) {
+      setSelectedMemberId(queryMemberId)
+    }
+  }, [queryMemberId])
 
   // ── Check if selected member already has diet plans ───────────────────
   useEffect(() => {
@@ -1738,5 +1748,22 @@ Stay hydrated and hit your daily macros! 🔥`
         </div>
       </div>
     </div>
+  )
+}
+
+export default function DietGeneratorPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6 lg:p-8 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+          <div className="w-10 h-10 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
+          <p className="text-zinc-500 text-xs uppercase tracking-widest font-bold">
+            Initializing AI Diet Generator...
+          </p>
+        </div>
+      }
+    >
+      <DietGeneratorContent />
+    </Suspense>
   )
 }
