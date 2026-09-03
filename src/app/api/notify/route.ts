@@ -5,12 +5,26 @@ import nodemailer from 'nodemailer'
 //  SMTP Transporter Factory
 // ──────────────────────────────────────────────────────────
 
+function isPlaceholder(val: string | null | undefined): boolean {
+  if (!val) return true
+  const lower = val.toLowerCase().trim()
+  return (
+    lower.includes('dummy') ||
+    lower.includes('placeholder') ||
+    lower.includes('your-google-app-password') ||
+    lower.includes('your-configured-sender') ||
+    lower.includes('your-email') ||
+    lower === 'undefined' ||
+    lower === 'null'
+  )
+}
+
 function getTransporter() {
   const user = process.env.GMAIL_EMAIL || process.env.SMTP_USER
   const rawPass = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || ''
   const pass = rawPass.replace(/\s+/g, '') // strip any spaced formatting
 
-  if (!user || !pass) {
+  if (!user || !pass || isPlaceholder(user) || isPlaceholder(pass)) {
     return null
   }
 
@@ -497,13 +511,13 @@ function buildGeneralEmailHtml(payload: GeneralEmailPayload, siteUrl: string): {
 
 export async function GET() {
   const user = process.env.GMAIL_EMAIL || process.env.SMTP_USER || null
-  const hasPass = Boolean(process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS)
-  const isConfigured = Boolean(user && hasPass)
+  const rawPass = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || ''
+  const hasValidCreds = Boolean(user && rawPass && !isPlaceholder(user) && !isPlaceholder(rawPass))
 
   let connectionStatus = 'unconfigured'
   let connectionError: string | null = null
 
-  if (isConfigured) {
+  if (hasValidCreds) {
     const transporter = getTransporter()
     if (transporter) {
       try {
@@ -514,12 +528,15 @@ export async function GET() {
         connectionError = err instanceof Error ? err.message : String(err)
       }
     }
+  } else if (user || rawPass) {
+    connectionStatus = 'simulation_mode'
   }
 
   return NextResponse.json({
     service: 'Vortex Automated SMTP Dispatcher',
     status: connectionStatus,
-    configured: isConfigured,
+    configured: hasValidCreds,
+    simulationMode: !hasValidCreds,
     senderEmail: user ? user.replace(/(.{2})(.*)(@.*)/, '$1***$3') : null,
     supportedTypes: ['diet', 'workout', 'general'],
     error: connectionError,
@@ -586,13 +603,13 @@ export async function POST(req: NextRequest) {
     const transporter = getTransporter()
     const senderEmail = process.env.GMAIL_EMAIL || process.env.SMTP_USER
 
-    // Fallback: If SMTP is not configured in local environment, log & simulate gracefully
-    if (!transporter || !senderEmail) {
-      console.warn('[notify] SMTP credentials missing in .env — simulating email delivery in development')
+    // Fallback: If SMTP is not configured or using placeholder in dev, log & simulate gracefully
+    if (!transporter || !senderEmail || isPlaceholder(senderEmail)) {
+      console.warn('[notify] SMTP credentials missing or placeholder — simulating email delivery in development')
       return NextResponse.json({
         success: true,
         simulated: true,
-        message: 'Email dispatch simulated in development (GMAIL_EMAIL or GMAIL_APP_PASSWORD not configured)',
+        message: 'Email dispatch simulated (live delivery requires configured GMAIL_APP_PASSWORD in .env.local)',
         recipients,
         subject,
         previewLength: html.length,
