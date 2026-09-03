@@ -608,6 +608,7 @@ function DietGeneratorContent() {
   const [selectedMemberId, setSelectedMemberId] = useState<string>('')
   const [searchMemberQuery, setSearchMemberQuery] = useState('')
   const [loadingMembers, setLoadingMembers] = useState(true)
+  const [showOnlyRequested, setShowOnlyRequested] = useState(true)
 
   // Biometrics & AI inputs
   const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial'>('metric')
@@ -676,17 +677,25 @@ function DietGeneratorContent() {
     return pendingRequests.find((r) => r.member_id === selectedMemberId) || null
   }, [pendingRequests, selectedMemberId])
 
-  // Filtered members list
+  // IDs of members with pending diet/both requests
+  const requestedMemberIds = useMemo(() => {
+    return new Set(pendingRequests.map((r) => r.member_id))
+  }, [pendingRequests])
+
+  // Filtered members list — optionally limited to only those who requested a diet plan
   const filteredMembers = useMemo(() => {
-    if (!searchMemberQuery.trim()) return members
+    let base = showOnlyRequested
+      ? members.filter((m) => requestedMemberIds.has(m.id))
+      : members
+    if (!searchMemberQuery.trim()) return base
     const q = searchMemberQuery.toLowerCase()
-    return members.filter(
+    return base.filter(
       (m) =>
         m.full_name?.toLowerCase().includes(q) ||
         m.email.toLowerCase().includes(q) ||
         m.user_id_code?.toLowerCase().includes(q)
     )
-  }, [members, searchMemberQuery])
+  }, [members, searchMemberQuery, showOnlyRequested, requestedMemberIds])
 
   // ── Initial Load: Trainer info, members, and requests ─────────────────
   useEffect(() => {
@@ -1186,11 +1195,24 @@ Stay hydrated and hit your daily macros! 🔥`
                 <User size={15} className="text-red-500" />
                 1. Select Member
               </h2>
-              {existingPlanCount > 0 && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  {existingPlanCount} Meals Active
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {existingPlanCount > 0 && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    {existingPlanCount} Meals Active
+                  </span>
+                )}
+                <button
+                  onClick={() => setShowOnlyRequested((v) => !v)}
+                  title={showOnlyRequested ? 'Showing only members who requested a diet plan' : 'Showing all members'}
+                  className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border transition-all ${
+                    showOnlyRequested
+                      ? 'bg-red-600/20 text-red-400 border-red-500/40'
+                      : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                  }`}
+                >
+                  {showOnlyRequested ? `Requested (${requestedMemberIds.size})` : 'All'}
+                </button>
+              </div>
             </div>
 
             {/* Search Input */}
@@ -1210,7 +1232,12 @@ Stay hydrated and hit your daily macros! 🔥`
               {loadingMembers ? (
                 <div className="py-6 text-center text-xs text-zinc-500">Loading members...</div>
               ) : filteredMembers.length === 0 ? (
-                <div className="py-6 text-center text-xs text-zinc-500">No members found</div>
+                <div className="py-6 text-center text-xs text-zinc-500">
+                  {showOnlyRequested
+                    ? <span>No pending diet requests.<br /><button onClick={() => setShowOnlyRequested(false)} className="text-red-400 underline mt-1 inline-block">Show all members</button></span>
+                    : 'No members found'
+                  }
+                </div>
               ) : (
                 filteredMembers.map((m) => {
                   const isSelected = selectedMemberId === m.id
@@ -1235,11 +1262,18 @@ Stay hydrated and hit your daily macros! 🔥`
                           <p className="text-[10px] text-zinc-500 truncate">{m.email}</p>
                         </div>
                       </div>
-                      {m.user_id_code && (
-                        <span className="text-[9px] font-mono px-1.5 py-0.5 bg-zinc-800 text-zinc-400 rounded shrink-0 ml-2">
-                          {m.user_id_code}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1 shrink-0 ml-2">
+                        {requestedMemberIds.has(m.id) && (
+                          <span className="text-[9px] font-black px-1.5 py-0.5 bg-red-600/20 text-red-400 border border-red-500/30 rounded uppercase">
+                            {pendingRequests.find((r) => r.member_id === m.id)?.request_type === 'both' ? 'diet+wk' : 'diet'}
+                          </span>
+                        )}
+                        {m.user_id_code && (
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 bg-zinc-800 text-zinc-400 rounded">
+                            {m.user_id_code}
+                          </span>
+                        )}
+                      </div>
                     </button>
                   )
                 })
