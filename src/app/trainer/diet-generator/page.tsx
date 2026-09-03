@@ -627,6 +627,11 @@ function DietGeneratorContent() {
   const [isSaving, setIsSaving] = useState(false)
   const [copied, setCopied] = useState(false)
 
+  // Gemini AI Custom Prompt & Summary State
+  const [customMemberNotes, setCustomMemberNotes] = useState<string>('')
+  const [aiSummary, setAiSummary] = useState<string>('')
+  const [isGeminiUsed, setIsGeminiUsed] = useState<boolean>(false)
+
   // Computed Macros
   const weightInKg = useMemo(() => {
     return unitSystem === 'metric' ? weight : Math.round(weight * 0.453592)
@@ -744,6 +749,13 @@ function DietGeneratorContent() {
     }
   }, [queryMemberId])
 
+  // ── Sync member active request notes into custom prompt text area ────
+  useEffect(() => {
+    if (memberActiveRequest?.notes) {
+      setCustomMemberNotes(memberActiveRequest.notes)
+    }
+  }, [memberActiveRequest])
+
   // ── Check if selected member already has diet plans ───────────────────
   useEffect(() => {
     if (!selectedMemberId) return
@@ -805,19 +817,70 @@ function DietGeneratorContent() {
     }
   }
 
-  // ── Full AI Generation Trigger ────────────────────────────────────────
-  function handleGenerateAiPlan() {
+  // ── Full Gemini AI Generation Trigger ─────────────────────────────────
+  async function handleGenerateAiPlan() {
     setIsGenerating(true)
-    startTransition(() => {
-      setTimeout(() => {
-        const newMeals = generateMealsFromMacros(computedMacros, dietPreference)
-        setMeals(newMeals)
-        setIsGenerating(false)
-        toast.success('AI Diet Schedule successfully generated! ⚡', {
-          description: `Target: ${computedMacros.targetCalories} kcal with 5 balanced meal phases.`,
+    try {
+      const payload = {
+        memberName: selectedMember?.full_name || selectedMember?.email || 'Member',
+        memberNotes: customMemberNotes || memberActiveRequest?.notes || '',
+        fitnessGoal,
+        dietPreference,
+        activityLevel,
+        targetCalories: computedMacros.targetCalories,
+        proteinGrams: computedMacros.proteinGrams,
+        carbsGrams: computedMacros.carbsGrams,
+        fatGrams: computedMacros.fatGrams,
+      }
+
+      const res = await fetch('/api/ai/generate-diet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await res.json()
+
+      if (data.success && Array.isArray(data.meals) && data.meals.length > 0) {
+        const formattedMeals: MealItem[] = data.meals.map((m: any, idx: number) => ({
+          id: `gemini-${Date.now()}-${idx}`,
+          meal_time: m.meal_time || 'Meal Phase',
+          food_items: m.food_items || '',
+          calories: Number(m.calories) || 0,
+          protein_g: Number(m.protein_g) || 0,
+          carbs_g: Number(m.carbs_g) || 0,
+          fat_g: Number(m.fat_g) || 0,
+          notes: m.notes || '',
+        }))
+
+        setMeals(formattedMeals)
+        setAiSummary(data.dietSummary || '')
+        setIsGeminiUsed(true)
+        toast.success('Gemini AI Diet Plan Generated! ⚡', {
+          description: `Personalized plan tailored to member description & targets (${computedMacros.targetCalories} kcal).`,
         })
-      }, 450)
-    })
+      } else {
+        console.warn('Gemini AI route returned fallback:', data.error)
+        const fallbackMeals = generateMealsFromMacros(computedMacros, dietPreference)
+        setMeals(fallbackMeals)
+        setAiSummary('')
+        setIsGeminiUsed(false)
+        toast.info('Generated diet using algorithmic macro engine', {
+          description: data.error
+            ? `Notice: ${data.error}`
+            : 'Using precision macro ratio calculator.',
+        })
+      }
+    } catch (err: any) {
+      console.error('AI Generation error:', err)
+      const fallbackMeals = generateMealsFromMacros(computedMacros, dietPreference)
+      setMeals(fallbackMeals)
+      setAiSummary('')
+      setIsGeminiUsed(false)
+      toast.error('AI call failed, fell back to algorithmic macro generator')
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   // ── Regenerate / Swap Single Meal ─────────────────────────────────────
@@ -1398,6 +1461,24 @@ Stay hydrated and hit your daily macros! 🔥`
               </select>
             </div>
 
+            {/* Member Description & Custom AI Prompt Input */}
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-300 mb-1 flex items-center gap-1.5">
+                <Sparkles size={13} className="text-red-400" />
+                Member Description & Custom Requirements
+              </label>
+              <textarea
+                value={customMemberNotes}
+                onChange={(e) => setCustomMemberNotes(e.target.value)}
+                placeholder="e.g. Member is allergic to peanuts, wants high protein Indian vegetarian meals, targeting 5kg weight loss in 2 months..."
+                rows={3}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 resize-none leading-relaxed"
+              />
+              <p className="text-[10px] text-zinc-500 mt-1 italic">
+                Gemini AI uses this description to build tailored recipes, ingredients, and meal portions.
+              </p>
+            </div>
+
             {/* AI Generate Button */}
             <button
               type="button"
@@ -1410,7 +1491,7 @@ Stay hydrated and hit your daily macros! 🔥`
               ) : (
                 <Sparkles size={16} />
               )}
-              {isGenerating ? 'Computing AI Metabolic Algorithms...' : 'Generate 5-Phase Diet Plan'}
+              {isGenerating ? 'Generating Gemini AI Diet Plan...' : 'Generate Plan with Gemini AI ⚡'}
             </button>
           </div>
         </div>
@@ -1565,6 +1646,25 @@ Stay hydrated and hit your daily macros! 🔥`
 
           {/* ── Meal Schedule Cards List ─────────────────────────────── */}
           <div className="space-y-4">
+            {isGeminiUsed && (
+              <div className="bg-gradient-to-r from-purple-950/40 via-zinc-900 to-zinc-950 border border-purple-800/40 rounded-2xl p-4 sm:p-5 flex items-start gap-3 shadow-lg">
+                <div className="p-2.5 bg-purple-500/10 border border-purple-500/20 rounded-xl shrink-0">
+                  <Sparkles size={20} className="text-purple-400" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      Gemini AI Personalized Strategy
+                    </span>
+                  </div>
+                  {aiSummary && <p className="text-xs text-purple-200/90 leading-relaxed font-medium">{aiSummary}</p>}
+                  <p className="text-[10px] text-zinc-400">
+                    Review and adjust any meal items or portion sizes below before publishing to member profile.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-black text-white flex items-center gap-2">

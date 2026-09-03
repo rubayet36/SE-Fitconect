@@ -18,9 +18,9 @@ export default async function MemberLayout({ children }: { children: React.React
   if (profile?.role === 'trainer') redirect('/trainer/dashboard')
 
   return (
-    <div className="flex min-h-screen bg-black">
+    <div className="flex min-h-screen bg-black" suppressHydrationWarning>
       <AppNavbar role="member" userName={profile?.full_name || user.email || ''} />
-      <main className="flex-1 lg:ml-64 pt-14 lg:pt-0 pb-20 lg:pb-0 min-h-screen">
+      <main className="flex-1 lg:ml-64 pt-14 lg:pt-0 pb-20 lg:pb-0 min-h-screen" suppressHydrationWarning>
         {children}
       </main>
     </div>
