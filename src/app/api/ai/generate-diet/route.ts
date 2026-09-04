@@ -14,7 +14,6 @@ interface GenerateDietPayload {
   customPrompt?: string
 }
 
-// Free models on OpenRouter — tried in order until one succeeds
 const OPENROUTER_MODELS = [
   'google/gemini-2.5-flash',
   'google/gemini-2.0-flash-exp:free',

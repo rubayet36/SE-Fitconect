@@ -1013,7 +1013,7 @@ Stay hydrated and hit your daily macros! 🔥`
 
     setIsSaving(true)
     try {
-      // 1. Delete previous diet_plans for this member to avoid duplicate stale records
+      // 1. Delete previous diet plan rows and header for this member
       const { error: delErr } = await supabase
         .from('diet_plans')
         .delete()
@@ -1023,8 +1023,25 @@ Stay hydrated and hit your daily macros! 🔥`
         console.warn('Diet delete warning (continuing insert):', delErr.message)
       }
 
-      // 2. Insert all meal rows
+      await supabase
+        .from('diet_plan_headers')
+        .delete()
+        .eq('member_id', selectedMemberId)
+
+      // 2. Create a new plan header
+      const { data: planHeader, error: planErr } = await supabase
+        .from('diet_plan_headers')
+        .insert({ member_id: selectedMemberId, trainer_id: trainerUser.id })
+        .select('id')
+        .single()
+
+      if (planErr || !planHeader) {
+        throw new Error('Failed to create diet plan header: ' + (planErr?.message ?? 'unknown'))
+      }
+
+      // 3. Insert all meal rows with plan_id
       const insertRows = meals.map((m) => ({
+        plan_id: planHeader.id,
         member_id: selectedMemberId,
         trainer_id: trainerUser.id,
         meal_time: m.meal_time,
