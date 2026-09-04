@@ -1,229 +1,150 @@
-'use client'
+import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
+import { Sparkles, ArrowRight } from 'lucide-react'
 
-import React, { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { toast } from 'sonner'
-import { RefreshCw } from 'lucide-react'
+export default async function TrainerDashboardPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-interface Request {
-  id: string
-  status: 'pending' | 'in_progress' | 'completed'
-  request_type: string
-  notes: string | null
-  created_at: string
-  member: { full_name: string | null; email: string } | null
-}
+  const [profileRes, membersRes, requestsRes, dietRes] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user!.id).single(),
+    supabase.from('profiles').select('id, full_name, email, user_id_code').eq('role', 'member'),
+    supabase.from('requests').select('*').in('request_type', ['diet', 'both']).neq('status', 'completed').order('created_at', { ascending: false }),
+    supabase.from('diet_plans').select('id, member_id').eq('trainer_id', user!.id),
+  ])
 
-const COLUMNS = [
-  { key: 'pending', label: 'New Requests', color: 'blue', dot: 'bg-blue-500' },
-  { key: 'in_progress', label: 'In Progress', color: 'yellow', dot: 'bg-yellow-500' },
-  { key: 'completed', label: 'Plan Sent', color: 'green', dot: 'bg-green-500' },
-] as const
-
-export default function TrainerDashboard() {
-  const supabase = createClient()
-  const [requests, setRequests] = useState<Request[]>([])
-  const [loading, setLoading] = useState(true)
-  const [updating, setUpdating] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'pending' | 'in_progress' | 'completed'>('pending')
-
-  const loadRequests = React.useCallback(async () => {
-    setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data } = await supabase
-      .from('requests')
-      .select('id, status, request_type, notes, created_at, member:member_id(full_name, email)')
-      .eq('trainer_id', user.id)
-      .order('created_at', { ascending: false })
-    setRequests((data as any) || [])
-    setLoading(false)
-  }, [supabase])
-
-  useEffect(() => {
-    const init = async () => { await loadRequests() }
-    init()
-  }, [loadRequests])
-
-  async function updateStatus(id: string, status: 'pending' | 'in_progress' | 'completed') {
-    setUpdating(id)
-    const { error } = await supabase.from('requests').update({ status, updated_at: new Date().toISOString() }).eq('id', id)
-    if (error) toast.error('Failed to update')
-    else {
-      setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r))
-      toast.success(`Status updated to ${status.replace('_', ' ')}`)
-    }
-    setUpdating(null)
-  }
-
-  const grouped = COLUMNS.reduce((acc, col) => {
-    acc[col.key] = requests.filter(r => r.status === col.key)
-    return acc
-  }, {} as Record<string, Request[]>)
-
-  const RequestCard = ({ req, col }: { req: Request; col: typeof COLUMNS[number] }) => (
-    <div className={`bg-zinc-950 border rounded-xl p-4 space-y-3 hover:border-zinc-600 transition-all ${
-      col.key === 'pending' ? 'border-blue-900/40' :
-      col.key === 'in_progress' ? 'border-yellow-900/40' : 'border-green-900/40'
-    }`}>
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="font-bold text-white text-sm">{(req.member as any)?.full_name || (req.member as any)?.email || 'Member'}</p>
-          <p className="text-xs text-zinc-600">{new Date(req.created_at).toLocaleDateString()}</p>
-        </div>
-        <span className={`text-xs font-bold px-2.5 py-1 rounded-full capitalize shrink-0 ${
-          req.request_type === 'both' ? 'bg-purple-500/20 text-purple-400' :
-          req.request_type === 'workout' ? 'bg-red-500/20 text-red-400' :
-          'bg-green-500/20 text-green-400'
-        }`}>{req.request_type}</span>
-      </div>
-
-      {req.notes && (
-        <p className="text-xs text-zinc-500 bg-zinc-900 rounded-lg p-2.5 leading-relaxed max-h-32 overflow-y-auto whitespace-pre-wrap">{req.notes}</p>
-      )}
-
-      <div className="grid grid-cols-2 gap-2">
-        {col.key !== 'pending' && (
-          <button disabled={updating === req.id} onClick={() => updateStatus(req.id, 'pending')}
-            className="py-2 text-xs font-bold border border-zinc-800 text-zinc-500 hover:text-blue-400 hover:border-blue-800 rounded-lg transition-all">
-            ← New
-          </button>
-        )}
-        {col.key !== 'in_progress' && (
-          <button disabled={updating === req.id} onClick={() => updateStatus(req.id, 'in_progress')}
-            className="py-2 text-xs font-bold border border-zinc-800 text-zinc-500 hover:text-yellow-400 hover:border-yellow-800 rounded-lg transition-all">
-            In Progress
-          </button>
-        )}
-        {col.key !== 'completed' && (
-          <button disabled={updating === req.id} onClick={() => updateStatus(req.id, 'completed')}
-            className="py-2 text-xs font-bold border border-zinc-800 text-zinc-500 hover:text-green-400 hover:border-green-800 rounded-lg transition-all">
-            ✓ Complete
-          </button>
-        )}
-        <a href={`/trainer/workout-builder?member=${(req as any).member_id || ''}`}
-          className="py-2 text-xs font-bold bg-red-600/10 border border-red-800/30 text-red-400 hover:bg-red-600 hover:text-white rounded-lg transition-all text-center col-span-1">
-          Build Plan →
-        </a>
-      </div>
-    </div>
-  )
+  const profile = profileRes.data as any
+  const members = (membersRes.data || []) as any[]
+  const pendingRequests = (requestsRes.data || []) as any[]
+  const dietPlans = (dietRes.data || []) as any[]
 
   return (
-    <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-5">
-
+    <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <p className="text-zinc-500 text-xs tracking-widest uppercase font-semibold">Trainer HQ</p>
-          <h1 className="text-2xl lg:text-3xl font-black text-white mt-1">Client Requests</h1>
+          <p className="text-xs text-red-500 font-bold uppercase tracking-widest">Trainer HQ</p>
+          <h1 className="text-3xl font-black text-white mt-1">
+            Welcome back, {profile?.full_name || 'Coach'} 🔥
+          </h1>
+          <p className="text-zinc-500 text-sm mt-1">
+            Manage your member workout routines, AI nutrition charts, and client progress.
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={loadRequests} className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white hover:border-zinc-600 transition-all">
-            <RefreshCw size={16} />
-          </button>
-        </div>
+
+        <Link
+          href="/trainer/diet-generator"
+          className="px-5 py-3 bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-[0_0_20px_rgba(220,38,38,0.35)] flex items-center gap-2 self-start md:self-auto"
+        >
+          <Sparkles size={16} />
+          Open AI Diet Generator
+        </Link>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        {COLUMNS.map(col => (
-          <div key={col.key} className="bg-zinc-950 border border-zinc-800 rounded-xl p-4">
-            <div className="text-3xl font-black text-white">{grouped[col.key]?.length || 0}</div>
-            <div className="flex items-center gap-2 mt-1">
-              <div className={`w-2 h-2 rounded-full ${col.dot}`} />
-              <div className="text-xs text-zinc-500 font-semibold truncate">{col.label}</div>
-            </div>
+      {/* Stats row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Active Members', value: members.length, icon: '👥', color: 'blue' },
+          { label: 'Pending Requests', value: pendingRequests.length, icon: '📋', color: 'red' },
+          { label: 'Assigned Diet Plans', value: dietPlans.length, icon: '🥗', color: 'green' },
+          { label: 'Trainer Status', value: 'Active', icon: '⚡', color: 'yellow' },
+        ].map((stat) => (
+          <div key={stat.label} className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 hover:border-red-800/40 transition-colors">
+            <div className="text-2xl mb-2">{stat.icon}</div>
+            <div className="text-2xl font-black text-white">{stat.value}</div>
+            <div className="text-xs text-zinc-500 mt-1 font-medium">{stat.label}</div>
           </div>
         ))}
       </div>
 
-      {/* ── Mobile: Tab switcher ─────────────────────── */}
-      <div className="lg:hidden">
-        {/* Tab pills */}
-        <div className="flex rounded-xl overflow-hidden border border-zinc-800 mb-4">
-          {COLUMNS.map(col => (
-            <button
-              key={col.key}
-              onClick={() => setActiveTab(col.key)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold transition-all ${
-                activeTab === col.key
-                  ? 'bg-zinc-800 text-white'
-                  : 'bg-zinc-950 text-zinc-600 hover:text-zinc-400'
-              }`}
-            >
-              <div className={`w-1.5 h-1.5 rounded-full ${col.dot}`} />
-              <span className="truncate">{col.label}</span>
-              <span className={`ml-0.5 text-[10px] px-1.5 py-0.5 rounded-full ${
-                activeTab === col.key ? 'bg-zinc-700 text-zinc-200' : 'bg-zinc-900 text-zinc-600'
-              }`}>
-                {grouped[col.key]?.length || 0}
-              </span>
-            </button>
-          ))}
+      {/* Pending Requests & Quick Actions */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Left 2 Cols: Pending Requests */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-zinc-400 tracking-widest uppercase flex items-center gap-2">
+              <span className="w-6 h-[2px] bg-red-600" /> Pending Diet & Workout Requests
+            </h2>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-600/20 text-red-400">
+              {pendingRequests.length} Waiting
+            </span>
+          </div>
+
+          {pendingRequests.length === 0 ? (
+            <div className="p-8 rounded-2xl border border-dashed border-zinc-800 bg-zinc-950 text-center space-y-2">
+              <p className="text-3xl">🎉</p>
+              <p className="text-white font-bold text-sm">All caught up!</p>
+              <p className="text-zinc-500 text-xs">No pending diet or workout plan requests right now.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pendingRequests.map((req: any) => {
+                const member = members.find((m) => m.id === req.member_id)
+                return (
+                  <div
+                    key={req.id}
+                    className="p-4 bg-zinc-950 border border-zinc-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-zinc-700 transition-all"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white text-sm">{member?.full_name || 'Member'}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 uppercase font-mono">
+                          {req.request_type}
+                        </span>
+                      </div>
+                      <p className="text-zinc-500 text-xs">{member?.email}</p>
+                      {req.notes && (
+                        <p className="text-zinc-400 text-xs italic bg-zinc-900/60 p-2 rounded-lg mt-1.5 border border-zinc-800/60">
+                          &quot;{req.notes}&quot;
+                        </p>
+                      )}
+                    </div>
+
+                    <Link
+                      href="/trainer/diet-generator"
+                      className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 self-start sm:self-auto"
+                    >
+                      <Sparkles size={14} /> Generate Plan <ArrowRight size={13} />
+                    </Link>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Active tab content */}
-        {loading ? (
-          <div className="space-y-3 animate-pulse">
-            {[1, 2].map(i => (
-              <div key={i} className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 space-y-2">
-                <div className="h-4 bg-zinc-900 rounded w-3/4" />
-                <div className="h-3 bg-zinc-900 rounded w-1/2" />
-              </div>
-            ))}
-          </div>
-        ) : grouped[activeTab]?.length === 0 ? (
-          <div className="border border-zinc-800 border-dashed rounded-xl p-10 text-center text-zinc-700 text-sm">
-            No requests in this column
-          </div>
-        ) : (
+        {/* Right 1 Col: Quick Nav Links */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-bold text-zinc-400 tracking-widest uppercase flex items-center gap-2">
+            <span className="w-4 h-[2px] bg-red-600" /> Trainer Tools
+          </h2>
+
           <div className="space-y-3">
-            {grouped[activeTab].map(req => {
-              const col = COLUMNS.find(c => c.key === req.status)!
-              return <RequestCard key={req.id} req={req} col={col} />
-            })}
+            <Link
+              href="/trainer/diet-generator"
+              className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-red-600/50 hover:bg-red-950/10 transition-all block group"
+            >
+              <div className="text-2xl mb-1">🥣</div>
+              <p className="font-bold text-white text-sm group-hover:text-red-400 transition-colors">
+                AI Diet Generator
+              </p>
+              <p className="text-zinc-500 text-xs mt-0.5">
+                Calculate TDEE, macros, and generate 5-meal daily schedules.
+              </p>
+            </Link>
+
+            <div className="p-4 bg-zinc-950/60 border border-zinc-800/80 rounded-xl">
+              <div className="text-2xl mb-1">🏋️</div>
+              <p className="font-bold text-zinc-300 text-sm">
+                Workout Builder
+              </p>
+              <p className="text-zinc-600 text-xs mt-0.5">
+                Assign day-by-day routines and exercises.
+              </p>
+            </div>
           </div>
-        )}
+        </div>
       </div>
-
-      {/* ── Desktop: Kanban ──────────────────────────── */}
-      {loading ? (
-        <div className="hidden lg:flex gap-4">
-          {COLUMNS.map(col => (
-            <div key={col.key} className="space-y-3 flex-1">
-              <div className="h-5 bg-zinc-900 rounded w-32 animate-pulse" />
-              {[1, 2].map(i => (
-                <div key={i} className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 space-y-2 animate-pulse">
-                  <div className="h-4 bg-zinc-900 rounded w-3/4" />
-                  <div className="h-3 bg-zinc-900 rounded w-1/2" />
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="hidden lg:flex gap-4">
-          {COLUMNS.map(col => (
-            <div key={col.key} className="space-y-3 flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <div className={`w-2.5 h-2.5 rounded-full ${col.dot}`} />
-                <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-widest">{col.label}</h2>
-                <span className="ml-auto text-xs text-zinc-600 bg-zinc-900 px-2 py-0.5 rounded-full">{grouped[col.key]?.length}</span>
-              </div>
-              {grouped[col.key]?.length === 0 ? (
-                <div className="border border-zinc-800 border-dashed rounded-xl p-6 text-center text-zinc-700 text-sm">
-                  No requests here
-                </div>
-              ) : grouped[col.key]?.map(req => (
-                <RequestCard key={req.id} req={req} col={col} />
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-
-
     </div>
   )
 }

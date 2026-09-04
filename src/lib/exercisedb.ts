@@ -111,3 +111,34 @@ export async function getExerciseById(id: string): Promise<Exercise> {
   if (!found) throw new Error(`Exercise not found: ${id}`)
   return found
 }
+
+// ─────────────────────────────────────────────
+// Client-safe wrappers — call /api/exercises so the
+// heavy GitHub fetch always runs server-side and
+// benefits from Next.js response caching (no CORS issues).
+// These are used by the workout-builder client component via useQuery.
+// ─────────────────────────────────────────────
+
+async function apiGet<T>(params: Record<string, string | number>): Promise<T> {
+  const qs = new URLSearchParams(
+    Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)]))
+  ).toString()
+  const res = await fetch(`/api/exercises?${qs}`)
+  if (!res.ok) return [] as unknown as T
+  return res.json() as Promise<T>
+}
+
+export const clientGetBodyParts = (): Promise<string[]> =>
+  apiGet<string[]>({ action: 'bodyParts' })
+
+export const clientGetEquipmentList = (): Promise<string[]> =>
+  apiGet<string[]>({ action: 'equipment' })
+
+export const clientGetExercisesByBodyPart = (bodyPart: string, limit = 30): Promise<Exercise[]> =>
+  apiGet<Exercise[]>({ action: 'byBodyPart', bodyPart, limit })
+
+export const clientGetExercisesByEquipment = (equipment: string, limit = 30): Promise<Exercise[]> =>
+  apiGet<Exercise[]>({ action: 'byEquipment', equipment, limit })
+
+export const clientSearchExercises = (query: string, limit = 30): Promise<Exercise[]> =>
+  apiGet<Exercise[]>({ action: 'search', q: query, limit })

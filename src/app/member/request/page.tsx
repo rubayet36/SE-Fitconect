@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { Send, ChevronDown } from 'lucide-react'
+import { Send } from 'lucide-react'
 
 interface Trainer { id: string; full_name: string | null; email: string }
 

@@ -5,11 +5,18 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 
+interface TemplateExercise {
+  id: string
+  exercise_name: string
+  sets: number
+  reps: string
+}
+
 interface Template {
   id: string
   name: string
   description: string | null
-  exercises: any[]
+  routine_template_exercises: TemplateExercise[]
   created_at: string
 }
 
@@ -25,7 +32,11 @@ export default function TemplatesPage() {
   const loadTemplates = React.useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const { data } = await supabase.from('routine_templates').select('*').eq('trainer_id', user.id).order('created_at', { ascending: false })
+    const { data } = await supabase
+      .from('routine_templates')
+      .select('*, routine_template_exercises(id, exercise_name, sets, reps)')
+      .eq('trainer_id', user.id)
+      .order('created_at', { ascending: false })
     setTemplates((data as Template[]) || [])
     setLoading(false)
   }, [supabase])
@@ -44,11 +55,11 @@ export default function TemplatesPage() {
       trainer_id: user.id,
       name: newName,
       description: newDesc || null,
-      exercises: [],
+      // exercises are stored in routine_template_exercises — nothing to insert here
     }).select().single()
     if (error) toast.error('Failed: ' + error.message)
     else {
-      setTemplates(prev => [data, ...prev])
+      setTemplates(prev => [{ ...data, routine_template_exercises: [] }, ...prev])
       setNewName('')
       setNewDesc('')
       toast.success('Template created!')
@@ -63,7 +74,7 @@ export default function TemplatesPage() {
   }
 
   return (
-    <div className="p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
+    <div className="p-6 lg:p-8 max-w-4xl mx-auto space-y-6" suppressHydrationWarning>
       <div>
         <p className="text-zinc-500 text-xs tracking-widest uppercase font-semibold">Trainer Tools</p>
         <h1 className="text-3xl font-black text-white mt-1">Routine Templates</h1>
@@ -129,12 +140,12 @@ export default function TemplatesPage() {
               </div>
               {expanded === template.id && (
                 <div className="border-t border-zinc-800 px-5 py-4">
-                  {template.exercises?.length > 0 ? (
+                  {template.routine_template_exercises?.length > 0 ? (
                     <div className="space-y-2">
-                      {template.exercises.map((ex: any, i: number) => (
-                        <div key={i} className="flex items-center gap-3 text-sm">
+                      {template.routine_template_exercises.map((ex, i) => (
+                        <div key={ex.id} className="flex items-center gap-3 text-sm">
                           <span className="text-red-500 font-bold w-5 shrink-0">{i + 1}.</span>
-                          <span className="text-white capitalize flex-1">{ex.name}</span>
+                          <span className="text-white capitalize flex-1">{ex.exercise_name}</span>
                           <span className="text-zinc-600">{ex.sets}×{ex.reps}</span>
                         </div>
                       ))}

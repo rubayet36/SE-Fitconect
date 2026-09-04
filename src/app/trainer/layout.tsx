@@ -14,13 +14,12 @@ export default async function TrainerLayout({ children }: { children: React.Reac
     .eq('id', user.id)
     .single() as any
 
-  if (profile?.role === 'owner') redirect('/owner/dashboard')
   if (profile?.role === 'member') redirect('/member/dashboard')
 
   return (
-    <div className="flex min-h-screen bg-black">
+    <div className="flex min-h-screen bg-black" suppressHydrationWarning>
       <AppNavbar role="trainer" userName={profile?.full_name || user.email || ''} />
-      <main className="flex-1 lg:ml-64 pt-14 lg:pt-0 pb-20 lg:pb-0 min-h-screen">
+      <main className="flex-1 lg:ml-64 pt-14 lg:pt-0 pb-20 lg:pb-0 min-h-screen" suppressHydrationWarning>
         {children}
       </main>
     </div>

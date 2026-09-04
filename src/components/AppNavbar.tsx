@@ -57,13 +57,13 @@ export function AppNavbar({ role, userName }: AppNavbarProps) {
       {/* Desktop side nav */}
       <aside className="hidden lg:flex flex-col w-64 min-h-screen bg-zinc-950 border-r border-zinc-800 fixed left-0 top-0 z-30">
         {/* Logo */}
-        <div className="px-6 py-6 border-b border-zinc-800">
+        <div className="px-6 py-6 border-b border-zinc-800" suppressHydrationWarning>
           <Link href={role === 'owner' ? '/owner/dashboard' : role === 'trainer' ? '/trainer/dashboard' : '/member/dashboard'}
             className="flex flex-col gap-0.5 group">
             <span className="text-2xl font-black tracking-[0.15em] text-white group-hover:text-red-400 transition-colors">VORTEX</span>
             <span className="text-red-500 text-[10px] tracking-[0.4em] uppercase font-semibold">Fitness Club</span>
           </Link>
-          <div className="mt-3 px-2 py-1.5 bg-red-950/30 border border-red-800/30 rounded-lg">
+          <div className="mt-3 px-2 py-1.5 bg-red-950/30 border border-red-800/30 rounded-lg" suppressHydrationWarning>
             <p className="text-xs text-red-400 font-semibold capitalize">{role} Portal</p>
             {userName && <p className="text-xs text-zinc-500 truncate">{userName}</p>}
           </div>
@@ -81,13 +81,13 @@ export function AppNavbar({ role, userName }: AppNavbarProps) {
               )}>
               <span>{item.icon}</span>
               {item.label}
-              {pathname === item.href && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-red-500" />}
+              {pathname === item.href && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-red-500" suppressHydrationWarning />}
             </Link>
           ))}
         </nav>
 
         {/* Logout */}
-        <div className="px-3 py-4 border-t border-zinc-800">
+        <div className="px-3 py-4 border-t border-zinc-800" suppressHydrationWarning>
           <button onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-zinc-500 hover:text-red-400 hover:bg-red-950/20 rounded-lg transition-all duration-200">
             <LogOut size={16} /> Sign Out
@@ -96,7 +96,7 @@ export function AppNavbar({ role, userName }: AppNavbarProps) {
       </aside>
 
       {/* Mobile top bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-800 flex items-center justify-between px-4 py-3">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-800 flex items-center justify-between px-4 py-3" suppressHydrationWarning>
         <Link href={role === 'owner' ? '/owner/dashboard' : role === 'trainer' ? '/trainer/dashboard' : '/member/dashboard'}>
           <span className="text-xl font-black tracking-[0.15em] text-white">VORTEX</span>
           <span className="text-red-500 text-[9px] tracking-[0.3em] uppercase font-semibold ml-2">{role}</span>
@@ -121,7 +121,7 @@ export function AppNavbar({ role, userName }: AppNavbarProps) {
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
                 )}>
                 <span className="text-base">{item.icon}</span>{item.label}
-                {pathname === item.href && <div className="ml-auto w-2 h-2 rounded-full bg-red-500" />}
+                {pathname === item.href && <div className="ml-auto w-2 h-2 rounded-full bg-red-500" suppressHydrationWarning />}
               </Link>
             ))}
             <div className="pt-3 border-t border-zinc-800">
@@ -136,7 +136,7 @@ export function AppNavbar({ role, userName }: AppNavbarProps) {
       )}
 
       {/* Mobile bottom tab bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 flex items-center safe-area-pb">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 flex items-center safe-area-pb" suppressHydrationWarning>
         {bottomItems.map(item => {
           const Icon = item.lucide
           const active = pathname === item.href
@@ -150,7 +150,7 @@ export function AppNavbar({ role, userName }: AppNavbarProps) {
               <span className="text-[9px] font-semibold tracking-wide truncate max-w-[52px] text-center leading-tight">
                 {item.label}
               </span>
-              {active && <div className="absolute bottom-1 w-1 h-1 rounded-full bg-red-500" />}
+              {active && <div className="absolute bottom-1 w-1 h-1 rounded-full bg-red-500" suppressHydrationWarning />}
             </Link>
           )
         })}

@@ -85,7 +85,7 @@ export function PushOptIn({ userId }: { userId: string }) {
         <Bell size={20} />
       </div>
       <div>
-        <h3 className="text-white font-bold text-sm">Don't miss out!</h3>
+        <h3 className="text-white font-bold text-sm">Don&apos;t miss out!</h3>
         <p className="text-zinc-400 text-sm mt-0.5 mb-3 leading-relaxed">Enable push notifications to get instant alerts for important gym announcements and notices.</p>
         <button onClick={handleSubscribe} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-all shadow-[0_0_15px_rgba(37,99,235,0.3)]">
           Enable Notifications

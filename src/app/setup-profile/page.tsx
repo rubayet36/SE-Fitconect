@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -8,7 +8,7 @@ import { BadgeCheck, IdCard, User, Zap } from 'lucide-react'
 
 export default function SetupProfilePage() {
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const [fullName, setFullName] = useState('')
   const [memberIdCode, setMemberIdCode] = useState('')
@@ -45,7 +45,7 @@ export default function SetupProfilePage() {
       setInitialLoading(false)
     }
     load()
-  }, [])
+  }, [router, supabase])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

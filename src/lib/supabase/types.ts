@@ -11,6 +11,8 @@ export type Database = {
           role: 'member' | 'trainer' | 'owner'
           avatar_url: string | null
           phone: string | null
+          user_id_code: string | null
+          push_subscription: Json | null
           created_at: string
           updated_at: string
         }
@@ -18,9 +20,11 @@ export type Database = {
           id: string
           email: string
           full_name?: string | null
-          role?: 'member' | 'trainer'
+          role?: 'member' | 'trainer' | 'owner'
           avatar_url?: string | null
           phone?: string | null
+          user_id_code?: string | null
+          push_subscription?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -28,9 +32,11 @@ export type Database = {
           id?: string
           email?: string
           full_name?: string | null
-          role?: 'member' | 'trainer'
+          role?: 'member' | 'trainer' | 'owner'
           avatar_url?: string | null
           phone?: string | null
+          user_id_code?: string | null
+          push_subscription?: Json | null
           updated_at?: string
         }
       }
@@ -61,14 +67,35 @@ export type Database = {
           updated_at?: string
         }
       }
-      routines: {
+      // ── Workout plan header ──────────────────────────────────────────────
+      routine_plans: {
         Row: {
           id: string
           member_id: string
           trainer_id: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          member_id: string
+          trainer_id: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          updated_at?: string
+        }
+      }
+      routines: {
+        Row: {
+          id: string
+          plan_id: string | null          // FK → routine_plans.id
+          member_id: string
+          trainer_id: string
           day_label: string
           exercise_db_id: string
-          exercise_name: string
+          exercise_name: string           // snapshot / display cache
           sets: number
           reps: string
           notes: string | null
@@ -77,6 +104,7 @@ export type Database = {
         }
         Insert: {
           id?: string
+          plan_id?: string | null
           member_id: string
           trainer_id: string
           day_label: string
@@ -95,9 +123,30 @@ export type Database = {
           order_index?: number
         }
       }
+      // ── Diet plan header ─────────────────────────────────────────────────
+      diet_plan_headers: {
+        Row: {
+          id: string
+          member_id: string
+          trainer_id: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          member_id: string
+          trainer_id: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          updated_at?: string
+        }
+      }
       diet_plans: {
         Row: {
           id: string
+          plan_id: string | null          // FK → diet_plan_headers.id
           member_id: string
           trainer_id: string
           meal_time: string
@@ -111,6 +160,7 @@ export type Database = {
         }
         Insert: {
           id?: string
+          plan_id?: string | null
           member_id: string
           trainer_id: string
           meal_time: string
@@ -132,13 +182,14 @@ export type Database = {
           notes?: string | null
         }
       }
+      // ── Routine template header ──────────────────────────────────────────
       routine_templates: {
         Row: {
           id: string
           trainer_id: string
           name: string
           description: string | null
-          exercises: Json
+          // exercises column removed — now stored in routine_template_exercises
           created_at: string
         }
         Insert: {
@@ -146,13 +197,50 @@ export type Database = {
           trainer_id: string
           name: string
           description?: string | null
-          exercises?: Json
           created_at?: string
         }
         Update: {
           name?: string
           description?: string | null
-          exercises?: Json
+        }
+      }
+      // ── Routine template exercises (child rows) ──────────────────────────
+      routine_template_exercises: {
+        Row: {
+          id: string
+          template_id: string             // FK → routine_templates.id
+          exercise_db_id: string
+          exercise_name: string
+          body_part: string | null
+          equipment: string | null
+          target: string | null
+          gif_url: string | null
+          sets: number
+          reps: string
+          notes: string | null
+          order_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          template_id: string
+          exercise_db_id: string
+          exercise_name: string
+          body_part?: string | null
+          equipment?: string | null
+          target?: string | null
+          gif_url?: string | null
+          sets?: number
+          reps?: string
+          notes?: string | null
+          order_index?: number
+          created_at?: string
+        }
+        Update: {
+          sets?: number
+          reps?: string
+          notes?: string | null
+          order_index?: number
         }
       }
       bookmarks: {
@@ -160,7 +248,7 @@ export type Database = {
           id: string
           user_id: string
           exercise_db_id: string
-          exercise_name: string
+          exercise_name: string           // snapshot / display cache
           exercise_gif: string | null
           created_at: string
         }
