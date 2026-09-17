@@ -6,17 +6,19 @@ export default async function TrainerDashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [profileRes, membersRes, requestsRes, dietRes] = await Promise.all([
+  const [profileRes, membersRes, requestsRes, dietRes, pendingApprovalsRes] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user!.id).single(),
     supabase.from('profiles').select('id, full_name, email, user_id_code').eq('role', 'member'),
     supabase.from('requests').select('*').in('request_type', ['diet', 'both']).neq('status', 'completed').order('created_at', { ascending: false }),
     supabase.from('diet_plans').select('id, member_id').eq('trainer_id', user!.id),
+    supabase.from('exercise_logs').select('id', { count: 'exact' }).eq('trainer_id', user!.id).eq('status', 'pending'),
   ])
 
   const profile = profileRes.data as any
   const members = (membersRes.data || []) as any[]
   const pendingRequests = (requestsRes.data || []) as any[]
   const dietPlans = (dietRes.data || []) as any[]
+  const pendingApprovalsCount = pendingApprovalsRes.count || 0
 
   return (
     <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-8">
@@ -28,32 +30,49 @@ export default async function TrainerDashboardPage() {
             Welcome back, {profile?.full_name || 'Coach'} 🔥
           </h1>
           <p className="text-zinc-500 text-sm mt-1">
-            Manage your member workout routines, AI nutrition charts, and client progress.
+            Manage your member workout routines, AI nutrition charts, and exercise point approvals.
           </p>
         </div>
 
-        <Link
-          href="/trainer/diet-generator"
-          className="px-5 py-3 bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-[0_0_20px_rgba(220,38,38,0.35)] flex items-center gap-2 self-start md:self-auto"
-        >
-          <Sparkles size={16} />
-          Open AI Diet Generator
-        </Link>
+        <div className="flex items-center gap-3 self-start md:self-auto">
+          <Link
+            href="/trainer/approvals"
+            className="px-4 py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-2"
+          >
+            📋 Approvals
+            {pendingApprovalsCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-red-600 text-white">
+                {pendingApprovalsCount}
+              </span>
+            )}
+          </Link>
+          <Link
+            href="/trainer/diet-generator"
+            className="px-5 py-3 bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-[0_0_20px_rgba(220,38,38,0.35)] flex items-center gap-2"
+          >
+            <Sparkles size={16} />
+            AI Diet Generator
+          </Link>
+        </div>
       </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Active Members', value: members.length, icon: '👥', color: 'blue' },
-          { label: 'Pending Requests', value: pendingRequests.length, icon: '📋', color: 'red' },
+          { label: 'Pending Plan Requests', value: pendingRequests.length, icon: '📝', color: 'red' },
+          { label: 'Exercise Approvals', value: pendingApprovalsCount, icon: '📋', color: 'yellow', href: '/trainer/approvals' },
           { label: 'Assigned Diet Plans', value: dietPlans.length, icon: '🥗', color: 'green' },
-          { label: 'Trainer Status', value: 'Active', icon: '⚡', color: 'yellow' },
         ].map((stat) => (
-          <div key={stat.label} className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 hover:border-red-800/40 transition-colors">
+          <Link
+            key={stat.label}
+            href={stat.href || '#'}
+            className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 hover:border-red-800/40 transition-colors block"
+          >
             <div className="text-2xl mb-2">{stat.icon}</div>
             <div className="text-2xl font-black text-white">{stat.value}</div>
             <div className="text-xs text-zinc-500 mt-1 font-medium">{stat.label}</div>
-          </div>
+          </Link>
         ))}
       </div>
 
