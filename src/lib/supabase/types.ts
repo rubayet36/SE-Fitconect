@@ -265,6 +265,139 @@ export type Database = {
           exercise_gif: string | null
         }>
       }
+      // ── Gamification tables ──────────────────────────────────────────────
+      exercise_logs: {
+        Row: {
+          id: string
+          member_id: string
+          trainer_id: string
+          exercise_name: string
+          exercise_db_id: string | null
+          sets_completed: number
+          reps_completed: string
+          duration_mins: number | null
+          notes: string | null
+          status: 'pending' | 'approved' | 'rejected'
+          points_awarded: number
+          submitted_at: string
+          reviewed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          member_id: string
+          trainer_id: string
+          exercise_name: string
+          exercise_db_id?: string | null
+          sets_completed?: number
+          reps_completed?: string
+          duration_mins?: number | null
+          notes?: string | null
+          status?: 'pending' | 'approved' | 'rejected'
+          points_awarded?: number
+          submitted_at?: string
+          reviewed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          status?: 'pending' | 'approved' | 'rejected'
+          notes?: string | null
+          reviewed_at?: string | null
+        }
+      }
+      member_points: {
+        Row: {
+          id: string
+          member_id: string
+          total_points: number
+          weekly_points: number
+          monthly_points: number
+          streak_days: number
+          last_activity_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          member_id: string
+          total_points?: number
+          weekly_points?: number
+          monthly_points?: number
+          streak_days?: number
+          last_activity_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          total_points?: number
+          weekly_points?: number
+          monthly_points?: number
+          streak_days?: number
+          last_activity_date?: string | null
+          updated_at?: string
+        }
+      }
+      point_transactions: {
+        Row: {
+          id: string
+          member_id: string
+          exercise_log_id: string | null
+          points: number
+          reason: string
+          awarded_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          member_id: string
+          exercise_log_id?: string | null
+          points: number
+          reason: string
+          awarded_by?: string | null
+          created_at?: string
+        }
+        Update: never
+      }
+      badges: {
+        Row: {
+          id: string
+          name: string
+          description: string
+          icon_emoji: string
+          points_required: number
+          badge_type: 'milestone' | 'streak' | 'special'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description: string
+          icon_emoji?: string
+          points_required?: number
+          badge_type?: 'milestone' | 'streak' | 'special'
+          created_at?: string
+        }
+        Update: {
+          name?: string
+          description?: string
+          icon_emoji?: string
+          points_required?: number
+          badge_type?: 'milestone' | 'streak' | 'special'
+        }
+      }
+      member_badges: {
+        Row: {
+          id: string
+          member_id: string
+          badge_id: string
+          earned_at: string
+        }
+        Insert: {
+          id?: string
+          member_id: string
+          badge_id: string
+          earned_at?: string
+        }
+        Update: never
+      }
     }
     Views: {
       [_ in never]: never
