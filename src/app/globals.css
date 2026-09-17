@@ -484,3 +484,48 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+
+/* ============================
+   RankBadge — Task 5
+   ============================ */
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  transition: transform 0.15s ease;
+}
+
+.rank-badge:hover {
+  transform: scale(1.05);
+}
+
+/* Pill-specific overrides — more specific than the leaderboard row variants */
+.rank-badge.rank-gold {
+  background: linear-gradient(135deg, #ffd700, #ffa500) !important;
+  border-color: transparent !important;
+  color: #1a1a00;
+}
+
+.rank-badge.rank-silver {
+  background: linear-gradient(135deg, #c0c0c0, #a8a8a8) !important;
+  border-color: transparent !important;
+  color: #1a1a1a;
+}
+
+.rank-badge.rank-bronze {
+  background: linear-gradient(135deg, #cd7f32, #a0522d) !important;
+  border-color: transparent !important;
+  color: white;
+}
+
+.rank-badge.rank-default {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
