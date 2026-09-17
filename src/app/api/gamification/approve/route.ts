@@ -27,7 +27,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { log_id, status } = body as { log_id: string; status: string }
+  const { log_id, status } = body as { log_id: string; status: 'approved' | 'rejected' }
 
   // Validate inputs
   if (!log_id) {
@@ -41,8 +41,8 @@ export async function PATCH(request: Request) {
   }
 
   // RLS policy ensures only the assigned trainer can update this row
-  const { data, error } = await supabase
-    .from('exercise_logs')
+  const { data, error } = await (supabase
+    .from('exercise_logs') as any)
     .update({ status })
     .eq('id', log_id)
     .eq('trainer_id', user.id)   // prevents trainers from approving others' logs

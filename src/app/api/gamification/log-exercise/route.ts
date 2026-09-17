@@ -57,8 +57,8 @@ export async function POST(request: Request) {
     )
   }
 
-  const { data, error } = await supabase
-    .from('exercise_logs')
+  const { data, error } = await (supabase
+    .from('exercise_logs') as any)
     .insert({
       member_id: user.id,
       trainer_id,
