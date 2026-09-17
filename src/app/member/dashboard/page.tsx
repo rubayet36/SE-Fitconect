@@ -28,12 +28,20 @@ function PointsWidget({
           <Zap className="w-4 h-4 text-amber-400 fill-amber-400" />
           My Gamification & Points
         </h3>
-        <Link
-          href="/member/leaderboard"
-          className="text-xs font-bold text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
-        >
-          View Full Leaderboard <ArrowRight className="w-3.5 h-3.5" />
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/member/log-exercise"
+            className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-red-600/20 flex items-center gap-1"
+          >
+            ⚡ Log Workout
+          </Link>
+          <Link
+            href="/member/leaderboard"
+            className="text-xs font-bold text-red-400 hover:text-red-300 hidden sm:flex items-center gap-1 transition-colors px-2 py-1"
+          >
+            Leaderboard <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
