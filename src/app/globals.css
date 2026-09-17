@@ -126,3 +126,56 @@ body {
   --radius-xl: calc(var(--radius) + 4px);
   --font-sans: 'Inter', system-ui, sans-serif;
 }
+
+/* Gamification & Leaderboard utilities */
+.rank-gold {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.1) 100%);
+  border-color: rgba(245, 158, 11, 0.5) !important;
+}
+
+.rank-silver {
+  background: linear-gradient(135deg, rgba(203, 213, 225, 0.2) 0%, rgba(148, 163, 184, 0.08) 100%);
+  border-color: rgba(203, 213, 225, 0.4) !important;
+}
+
+.rank-bronze {
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.2) 0%, rgba(180, 83, 9, 0.08) 100%);
+  border-color: rgba(217, 119, 6, 0.4) !important;
+}
+
+.leaderboard-row {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.leaderboard-row:hover {
+  transform: translateX(4px);
+}
+
+@keyframes userGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 1.5px rgba(34, 197, 94, 0.7), 0 0 15px rgba(34, 197, 94, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 1), 0 0 25px rgba(34, 197, 94, 0.4);
+  }
+}
+
+.current-user-row {
+  animation: userGlow 2.5s infinite ease-in-out;
+  border-color: rgba(34, 197, 94, 0.8) !important;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideInUp 0.35s ease-out forwards;
+}
