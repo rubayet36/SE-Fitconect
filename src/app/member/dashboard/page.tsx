@@ -4,7 +4,7 @@ import { MemberIdGate } from '@/components/MemberIdGate'
 import { DashboardHeader } from '@/components/DashboardHeader'
 import { StreakTracker, RankBadge, MemberRealtimeNotifier } from '@/components/gamification'
 import Link from 'next/link'
-import { Zap, Trophy, Flame, ChevronRight, Award, PlusCircle, History } from 'lucide-react'
+import { Zap, Trophy, Flame, ChevronRight, Award, PlusCircle, History, Sparkles, UserCheck, Dumbbell } from 'lucide-react'
 
 export default async function MemberDashboard() {
   const supabase = await createClient()
@@ -18,6 +18,7 @@ export default async function MemberDashboard() {
     timetableRes,
     memberPointsRes,
     memberBadgesRes,
+    trainersRes,
   ] = await Promise.all([
     supabase.from('profiles').select('full_name, user_id_code').eq('id', user!.id).single(),
     supabase.from('requests').select('id, status, request_type, created_at').eq('member_id', user!.id).order('created_at', { ascending: false }).limit(3),
@@ -26,6 +27,7 @@ export default async function MemberDashboard() {
     supabase.from('gym_timetable').select('id, day_label, open_time, close_time, is_closed').order('display_order', { ascending: true }),
     supabase.from('member_points').select('*').eq('member_id', user!.id).maybeSingle(),
     supabase.from('member_badges').select('id, earned_at, badges(id, name, description, icon_emoji)').eq('member_id', user!.id),
+    supabase.from('profiles').select('id, full_name, email, specialization, bio, experience_years').eq('role', 'trainer').limit(4),
   ])
 
   const profile = profileRes.data as { full_name: string | null; user_id_code: string | null } | null
@@ -33,6 +35,7 @@ export default async function MemberDashboard() {
   const routines: any[] = (routinesRes.data as any) || []
   const gymNotices: { id: string; title: string; body: string; type: 'info' | 'warning' | 'success'; created_at: string }[] = (noticesRes.data as any) || []
   const gymHours: { id: string; day_label: string; open_time: string; close_time: string; is_closed: boolean }[] = (timetableRes.data as any) || []
+  const coaches: any[] = (trainersRes.data as any) || []
 
   // Real gamification data
   const memberPoints = memberPointsRes.data
@@ -152,6 +155,86 @@ export default async function MemberDashboard() {
         <div className="mt-6 pt-6 border-t border-zinc-800/80">
           <StreakTracker streakDays={streakDays} lastActivityDate={lastActivityDate} />
         </div>
+      </div>
+
+      {/* Featured Coaches & Specializations Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-bold text-zinc-400 tracking-widest uppercase flex items-center gap-2">
+            <span className="w-6 h-[2px] bg-red-600" /> Certified Gym Coaches & Specialties
+          </h2>
+          <Link
+            href="/member/request"
+            className="text-xs text-red-500 hover:text-red-400 font-bold transition-colors flex items-center gap-1"
+          >
+            Choose Coach & Request Plan <ChevronRight size={14} />
+          </Link>
+        </div>
+
+        {coaches.length === 0 ? (
+          <div className="p-6 bg-zinc-950 border border-dashed border-zinc-800 rounded-2xl text-center">
+            <p className="text-zinc-600 text-xs">No coaches registered yet.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {coaches.map((coach: any) => {
+              const specialties = coach.specialization
+                ? coach.specialization.split(',').map((s: string) => s.trim()).filter(Boolean)
+                : []
+
+              return (
+                <div
+                  key={coach.id}
+                  className="bg-zinc-950 border border-zinc-800/90 rounded-2xl p-5 flex flex-col justify-between space-y-4 hover:border-zinc-700 transition-all group"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-600 to-rose-800 flex items-center justify-center font-black text-white text-sm shadow-md shrink-0">
+                        {(coach.full_name || 'Coach')[0].toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-bold text-white text-sm truncate group-hover:text-red-400 transition-colors">
+                          {coach.full_name || 'Coach'}
+                        </h3>
+                        <p className="text-[11px] text-zinc-500 font-mono">
+                          {coach.experience_years ? `${coach.experience_years}+ Yrs Exp` : 'Certified Trainer'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Specialization Tags */}
+                    <div>
+                      <span className="text-[10px] text-zinc-600 uppercase tracking-wider font-semibold block mb-1">
+                        Specialty
+                      </span>
+                      {specialties.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {specialties.slice(0, 2).map((tag: string) => (
+                            <span
+                              key={tag}
+                              className="text-[10px] px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-zinc-300 font-medium"
+                            >
+                              🔥 {tag}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-zinc-600 italic">General Fitness & Strength</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <Link
+                    href={`/member/request?trainerId=${coach.id}`}
+                    className="w-full py-2 bg-zinc-900 hover:bg-red-600 text-zinc-300 hover:text-white rounded-xl text-center text-xs font-bold uppercase tracking-wider transition-all border border-zinc-800 block"
+                  >
+                    Select Coach →
+                  </Link>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">

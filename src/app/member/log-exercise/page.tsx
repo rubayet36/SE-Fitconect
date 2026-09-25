@@ -11,6 +11,7 @@ type Trainer = {
   id: string
   full_name: string | null
   email: string
+  specialization?: string | null
 }
 
 const COMMON_EXERCISES = [
@@ -65,7 +66,7 @@ export default function LogExercisePage() {
       // Fetch all trainer profiles
       const { data: allTrainers } = await supabase
         .from('profiles')
-        .select('id, full_name, email')
+        .select('id, full_name, email, specialization')
         .eq('role', 'trainer')
 
       const trainerList: Trainer[] = (allTrainers || []).sort((a, b) => {
@@ -239,7 +240,7 @@ export default function LogExercisePage() {
                 >
                   {trainers.map((t) => (
                     <option key={t.id} value={t.id}>
-                      {t.full_name || 'Trainer'} ({t.email})
+                      {t.full_name || 'Trainer'}{t.specialization ? ` • [${t.specialization}]` : ''} ({t.email})
                     </option>
                   ))}
                 </select>

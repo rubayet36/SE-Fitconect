@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { LogOut, Menu, X, LayoutDashboard, Dumbbell, Salad, Search, Bookmark, ClipboardList, LayoutGrid, ChefHat, FileText, Megaphone, Crown, UserPlus, Clock, Trophy, Zap, CheckCircle2 } from 'lucide-react'
+import { LogOut, Menu, X, LayoutDashboard, Dumbbell, Salad, Search, Bookmark, ClipboardList, LayoutGrid, ChefHat, FileText, Megaphone, Crown, UserPlus, Clock, Trophy, Zap, CheckCircle2, User } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
@@ -29,6 +29,7 @@ const trainerNavItems: NavItem[] = [
   { label: 'Diet Generator', href: '/trainer/diet-generator', icon: '🥣', lucide: ChefHat },
   { label: 'Templates', href: '/trainer/templates', icon: '📄', lucide: FileText },
   { label: 'Billboard', href: '/trainer/billboard', icon: '📢', lucide: Megaphone },
+  { label: 'My Profile', href: '/trainer/profile', icon: '👤', lucide: User },
 ]
 
 const ownerNavItems: NavItem[] = [

@@ -13,6 +13,10 @@ export type Database = {
           avatar_url: string | null
           phone: string | null
           user_id_code: string | null
+          specialization: string | null
+          bio: string | null
+          experience_years: number | null
+          certifications: string | null
           push_subscription: Json | null
           created_at: string
           updated_at: string
@@ -26,6 +30,10 @@ export type Database = {
           avatar_url?: string | null
           phone?: string | null
           user_id_code?: string | null
+          specialization?: string | null
+          bio?: string | null
+          experience_years?: number | null
+          certifications?: string | null
           push_subscription?: Json | null
           created_at?: string
           updated_at?: string
@@ -39,6 +47,10 @@ export type Database = {
           avatar_url?: string | null
           phone?: string | null
           user_id_code?: string | null
+          specialization?: string | null
+          bio?: string | null
+          experience_years?: number | null
+          certifications?: string | null
           push_subscription?: Json | null
           updated_at?: string
         }
