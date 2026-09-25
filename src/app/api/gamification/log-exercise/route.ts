@@ -62,12 +62,12 @@ export async function POST(request: Request) {
     .insert({
       member_id: user.id,
       trainer_id,
-      exercise_name,
+      exercise_name: exercise_name.trim(),
       exercise_db_id: exercise_db_id ?? null,
-      sets_completed,
-      reps_completed,
-      duration_mins: duration_mins ?? null,
-      notes: notes ?? null,
+      sets_completed: Number(sets_completed),
+      reps_completed: String(reps_completed).trim(),
+      duration_mins: duration_mins != null ? Number(duration_mins) : null,
+      notes: notes ? String(notes).trim() : null,
     })
     .select()
     .single()

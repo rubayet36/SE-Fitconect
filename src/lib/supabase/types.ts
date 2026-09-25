@@ -39,6 +39,7 @@ export type Database = {
           push_subscription?: Json | null
           updated_at?: string
         }
+        Relationships: []
       }
       requests: {
         Row: {
@@ -66,6 +67,22 @@ export type Database = {
           notes?: string | null
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "requests_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requests_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       // ── Workout plan header ──────────────────────────────────────────────
       routine_plans: {
@@ -86,6 +103,22 @@ export type Database = {
         Update: {
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "routine_plans_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routine_plans_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       routines: {
         Row: {
@@ -122,6 +155,7 @@ export type Database = {
           notes?: string | null
           order_index?: number
         }
+        Relationships: []
       }
       // ── Diet plan header ─────────────────────────────────────────────────
       diet_plan_headers: {
@@ -142,6 +176,7 @@ export type Database = {
         Update: {
           updated_at?: string
         }
+        Relationships: []
       }
       diet_plans: {
         Row: {
@@ -181,6 +216,7 @@ export type Database = {
           fat_g?: number | null
           notes?: string | null
         }
+        Relationships: []
       }
       // ── Routine template header ──────────────────────────────────────────
       routine_templates: {
@@ -189,7 +225,6 @@ export type Database = {
           trainer_id: string
           name: string
           description: string | null
-          // exercises column removed — now stored in routine_template_exercises
           created_at: string
         }
         Insert: {
@@ -203,6 +238,7 @@ export type Database = {
           name?: string
           description?: string | null
         }
+        Relationships: []
       }
       // ── Routine template exercises (child rows) ──────────────────────────
       routine_template_exercises: {
@@ -242,6 +278,7 @@ export type Database = {
           notes?: string | null
           order_index?: number
         }
+        Relationships: []
       }
       bookmarks: {
         Row: {
@@ -264,6 +301,57 @@ export type Database = {
           exercise_name: string
           exercise_gif: string | null
         }>
+        Relationships: []
+      }
+      gym_notices: {
+        Row: {
+          id: string
+          title: string
+          body: string
+          type: 'info' | 'warning' | 'success'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          body: string
+          type?: 'info' | 'warning' | 'success'
+          created_at?: string
+        }
+        Update: {
+          title?: string
+          body?: string
+          type?: 'info' | 'warning' | 'success'
+        }
+        Relationships: []
+      }
+      gym_timetable: {
+        Row: {
+          id: string
+          day_label: string
+          open_time: string
+          close_time: string
+          is_closed: boolean
+          display_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          day_label: string
+          open_time?: string
+          close_time?: string
+          is_closed?: boolean
+          display_order?: number
+          created_at?: string
+        }
+        Update: {
+          day_label?: string
+          open_time?: string
+          close_time?: string
+          is_closed?: boolean
+          display_order?: number
+        }
+        Relationships: []
       }
       // ── Gamification tables ──────────────────────────────────────────────
       exercise_logs: {
@@ -302,8 +390,25 @@ export type Database = {
         Update: {
           status?: 'pending' | 'approved' | 'rejected'
           notes?: string | null
+          points_awarded?: number
           reviewed_at?: string | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_logs_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_logs_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       member_points: {
         Row: {
@@ -334,6 +439,15 @@ export type Database = {
           last_activity_date?: string | null
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "member_points_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       point_transactions: {
         Row: {
@@ -355,6 +469,22 @@ export type Database = {
           created_at?: string
         }
         Update: never
+        Relationships: [
+          {
+            foreignKeyName: "point_transactions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "point_transactions_exercise_log_id_fkey"
+            columns: ["exercise_log_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_logs"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       badges: {
         Row: {
@@ -382,6 +512,7 @@ export type Database = {
           points_required?: number
           badge_type?: 'milestone' | 'streak' | 'special'
         }
+        Relationships: []
       }
       member_badges: {
         Row: {
@@ -397,6 +528,22 @@ export type Database = {
           earned_at?: string
         }
         Update: never
+        Relationships: [
+          {
+            foreignKeyName: "member_badges_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {

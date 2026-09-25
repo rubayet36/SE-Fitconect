@@ -2,17 +2,30 @@ import { createClient } from '@/lib/supabase/server'
 import { PushOptIn } from '@/components/PushOptIn'
 import { MemberIdGate } from '@/components/MemberIdGate'
 import { DashboardHeader } from '@/components/DashboardHeader'
+import { StreakTracker, RankBadge, MemberRealtimeNotifier } from '@/components/gamification'
+import Link from 'next/link'
+import { Zap, Trophy, Flame, ChevronRight, Award, PlusCircle, History } from 'lucide-react'
 
 export default async function MemberDashboard() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [profileRes, requestsRes, routinesRes, noticesRes, timetableRes] = await Promise.all([
+  const [
+    profileRes,
+    requestsRes,
+    routinesRes,
+    noticesRes,
+    timetableRes,
+    memberPointsRes,
+    memberBadgesRes,
+  ] = await Promise.all([
     supabase.from('profiles').select('full_name, user_id_code').eq('id', user!.id).single(),
     supabase.from('requests').select('id, status, request_type, created_at').eq('member_id', user!.id).order('created_at', { ascending: false }).limit(3),
     supabase.from('routines').select('day_label, exercise_name').eq('member_id', user!.id).order('day_label'),
     supabase.from('gym_notices').select('id, title, body, type, created_at').order('created_at', { ascending: false }).limit(5),
     supabase.from('gym_timetable').select('id, day_label, open_time, close_time, is_closed').order('display_order', { ascending: true }),
+    supabase.from('member_points').select('*').eq('member_id', user!.id).maybeSingle(),
+    supabase.from('member_badges').select('id, earned_at, badges(id, name, description, icon_emoji)').eq('member_id', user!.id),
   ])
 
   const profile = profileRes.data as { full_name: string | null; user_id_code: string | null } | null
@@ -20,6 +33,25 @@ export default async function MemberDashboard() {
   const routines: any[] = (routinesRes.data as any) || []
   const gymNotices: { id: string; title: string; body: string; type: 'info' | 'warning' | 'success'; created_at: string }[] = (noticesRes.data as any) || []
   const gymHours: { id: string; day_label: string; open_time: string; close_time: string; is_closed: boolean }[] = (timetableRes.data as any) || []
+
+  // Real gamification data
+  const memberPoints = memberPointsRes.data
+  const totalPoints = memberPoints?.total_points ?? 0
+  const streakDays = memberPoints?.streak_days ?? 0
+  const lastActivityDate = memberPoints?.last_activity_date ?? null
+
+  // Calculate real leaderboard rank
+  let currentRank = 1
+  if (memberPoints) {
+    const { count } = await supabase
+      .from('member_points')
+      .select('id', { count: 'exact', head: true })
+      .gt('total_points', totalPoints)
+    currentRank = (count ?? 0) + 1
+  }
+
+  // Real badges
+  const earnedBadges = (memberBadgesRes.data || []).map((mb: any) => mb.badges).filter(Boolean)
 
   const uniqueDays = [...new Set(routines.map(r => r.day_label))]
 
@@ -29,6 +61,7 @@ export default async function MemberDashboard() {
   return (
     <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-8">
       {user && <PushOptIn userId={user.id} />}
+      {user && <MemberRealtimeNotifier userId={user.id} />}
       {/* Member ID gate — shows popup if user_id_code is missing */}
       <MemberIdGate />
       
@@ -38,13 +71,13 @@ export default async function MemberDashboard() {
         greeting={greeting}
       />
 
-      {/* Stats row */}
+      {/* Stats row with real Supabase streak */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Workout Days', value: uniqueDays.length || 0, icon: '🏋️', color: 'red' },
-          { label: 'Active Requests', value: myRequests?.filter(r => r.status !== 'completed').length || 0, icon: '📋', color: 'orange' },
-          { label: 'Plan Status', value: uniqueDays.length > 0 ? 'Active' : 'Pending', icon: '⚡', color: 'green' },
-          { label: 'Streak Days', value: '—', icon: '🔥', color: 'yellow' },
+          { label: 'Total Points', value: `${totalPoints.toLocaleString()} pts`, icon: '⚡', color: 'red' },
+          { label: 'Active Streak', value: `${streakDays} Day${streakDays === 1 ? '' : 's'}`, icon: '🔥', color: 'orange' },
+          { label: 'Leaderboard Rank', value: totalPoints > 0 ? `#${currentRank}` : 'Unranked', icon: '🏆', color: 'yellow' },
+          { label: 'Badges Earned', value: earnedBadges.length, icon: '🏅', color: 'green' },
         ].map(stat => (
           <div key={stat.label} className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 hover:border-red-800/40 transition-colors">
             <div className="text-2xl mb-2">{stat.icon}</div>
@@ -52,6 +85,73 @@ export default async function MemberDashboard() {
             <div className="text-xs text-zinc-500 mt-1 font-medium">{stat.label}</div>
           </div>
         ))}
+      </div>
+
+      {/* Gamification Spotlight Card */}
+      <div className="bg-gradient-to-r from-zinc-950 via-zinc-900/60 to-zinc-950 border border-zinc-800 rounded-2xl p-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-1 rounded-full bg-red-600/20 text-red-400 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <Zap size={13} className="text-red-400 animate-pulse" /> Gamification Center
+              </span>
+              {totalPoints > 0 && <RankBadge rank={currentRank} />}
+            </div>
+            <h2 className="text-2xl font-black text-white flex items-center gap-2">
+              Level Up Your Fitness Journey
+            </h2>
+            <p className="text-zinc-400 text-sm max-w-xl leading-relaxed">
+              Log your daily completed sets and workouts for trainer review. Earn verified points, keep your streak alive, and climb to the top of the gym leaderboard!
+            </p>
+
+            {/* Badges preview */}
+            <div className="pt-1">
+              <span className="text-xs text-zinc-500 font-semibold block mb-2 uppercase tracking-wider">
+                Earned Badges ({earnedBadges.length})
+              </span>
+              {earnedBadges.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {earnedBadges.map((badge: any) => (
+                    <span
+                      key={badge.id || badge.name}
+                      title={`${badge.name}: ${badge.description}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg text-xs font-medium hover:border-yellow-500/50 transition-colors"
+                    >
+                      <span>{badge.icon_emoji}</span>
+                      <span>{badge.name}</span>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-zinc-600 italic">
+                  Complete your first approved workout to unlock the 🌱 First Rep badge!
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row lg:flex-col gap-3 min-w-[220px]">
+            <Link
+              href="/member/log-exercise"
+              className="px-5 py-3.5 bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-[0_0_20px_rgba(220,38,38,0.35)] flex items-center justify-center gap-2"
+            >
+              <PlusCircle size={16} /> Log Workout
+            </Link>
+            <Link
+              href="/member/leaderboard"
+              className="px-5 py-3.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all border border-zinc-700/60 flex items-center justify-center gap-2"
+            >
+              <Trophy size={15} className="text-yellow-500" /> Leaderboard <ChevronRight size={14} />
+            </Link>
+          </div>
+        </div>
+
+        {/* 7-Day Activity Streak Strip */}
+        <div className="mt-6 pt-6 border-t border-zinc-800/80">
+          <StreakTracker streakDays={streakDays} lastActivityDate={lastActivityDate} />
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -87,18 +187,19 @@ export default async function MemberDashboard() {
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {[
-              { href: '/member/request', label: 'Request Plan', icon: '📋', desc: 'Get a trainer' },
+              { href: '/member/log-exercise', label: 'Log Workout', icon: '⚡', desc: 'Submit for pts' },
+              { href: '/member/leaderboard', label: 'Leaderboard', icon: '🏆', desc: 'Check rankings' },
+              { href: '/member/activity-log', label: 'Activity Log', icon: '📜', desc: 'View approvals' },
               { href: '/member/my-plan', label: 'My Workout', icon: '💪', desc: 'View routine' },
               { href: '/member/diet', label: 'Diet Chart', icon: '🥗', desc: 'See nutrition' },
               { href: '/member/explore', label: 'Exercise Library', icon: '🔍', desc: 'Browse exercises' },
-              { href: '/member/bookmarks', label: 'Bookmarks', icon: '🔖', desc: 'Saved exercises' },
             ].map(action => (
-              <a key={action.href} href={action.href}
+              <Link key={action.href} href={action.href}
                 className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl hover:border-red-700/50 hover:bg-red-950/10 transition-all duration-300 group">
                 <div className="text-xl mb-2">{action.icon}</div>
                 <div className="text-sm font-bold text-white group-hover:text-red-400 transition-colors">{action.label}</div>
                 <div className="text-xs text-zinc-600 mt-0.5">{action.desc}</div>
-              </a>
+              </Link>
             ))}
           </div>
         </div>
@@ -150,7 +251,7 @@ export default async function MemberDashboard() {
             ) : (
               <div className="text-center py-4">
                 <p className="text-zinc-600 text-sm">No requests yet</p>
-                <a href="/member/request" className="text-red-500 text-xs hover:text-red-400 mt-1 block">Create one →</a>
+                <Link href="/member/request" className="text-red-500 text-xs hover:text-red-400 mt-1 block">Create one →</Link>
               </div>
             )}
           </div>
