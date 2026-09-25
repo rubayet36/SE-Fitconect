@@ -38,10 +38,16 @@ export async function GET(request: Request) {
           .eq('id', user.id)
           .single()
 
+        const role =
+          profile?.role ||
+          (user.email === 'admin@vortex.com' || user.email === 'vortexfitnessclub001@gmail.com'
+            ? 'owner'
+            : (user.user_metadata?.role as string) || (user.app_metadata?.role as string) || 'member')
+
         const dest =
-          profile?.role === 'owner'
+          role === 'owner'
             ? '/owner/dashboard'
-            : profile?.role === 'trainer'
+            : role === 'trainer'
             ? '/trainer/dashboard'
             : '/member/dashboard'
 

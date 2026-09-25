@@ -25,28 +25,6 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  // Auth routes: redirect if already logged in
-  if (user && (pathname === '/login' || pathname === '/signup' || pathname === '/')) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role, status')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.status === 'blocked') {
-      return NextResponse.redirect(new URL('/suspended?reason=blocked', request.url))
-    }
-    if (profile?.status === 'paused') {
-      return NextResponse.redirect(new URL('/suspended?reason=paused', request.url))
-    }
-
-    let redirectTo = '/member/dashboard'
-    if (profile?.role === 'trainer') redirectTo = '/trainer/dashboard'
-    else if (profile?.role === 'owner') redirectTo = '/owner/dashboard'
-
-    return NextResponse.redirect(new URL(redirectTo, request.url))
-  }
-
   // Protected routes: redirect if not logged in
   if (!user && (
     pathname.startsWith('/member') ||
@@ -55,6 +33,48 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/setup-profile')
   )) {
     return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // Cross-role protection and routing when logged in
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, status')
+      .eq('id', user.id)
+      .single()
+
+    const role =
+      profile?.role ||
+      (user.email === 'admin@vortex.com' || user.email === 'vortexfitnessclub001@gmail.com'
+        ? 'owner'
+        : (user.user_metadata?.role as string) || (user.app_metadata?.role as string) || 'member')
+
+    // Suspension check
+    if (profile?.status === 'blocked') {
+      return NextResponse.redirect(new URL('/suspended?reason=blocked', request.url))
+    }
+    if (profile?.status === 'paused') {
+      return NextResponse.redirect(new URL('/suspended?reason=paused', request.url))
+    }
+
+    // Auth routes: redirect to respective dashboard
+    if (pathname === '/login' || pathname === '/signup' || pathname === '/') {
+      let redirectTo = '/member/dashboard'
+      if (role === 'trainer') redirectTo = '/trainer/dashboard'
+      else if (role === 'owner') redirectTo = '/owner/dashboard'
+      return NextResponse.redirect(new URL(redirectTo, request.url))
+    }
+
+    // Role-based boundaries
+    if (role === 'owner' && pathname.startsWith('/member')) {
+      return NextResponse.redirect(new URL('/owner/dashboard', request.url))
+    }
+    if (role === 'trainer' && pathname.startsWith('/member')) {
+      return NextResponse.redirect(new URL('/trainer/dashboard', request.url))
+    }
+    if (role === 'member' && (pathname.startsWith('/owner') || pathname.startsWith('/trainer'))) {
+      return NextResponse.redirect(new URL('/member/dashboard', request.url))
+    }
   }
 
   return supabaseResponse

@@ -14,12 +14,18 @@ export default async function MemberLayout({ children }: { children: React.React
     .eq('id', user.id)
     .single() as any
 
+  const role =
+    profile?.role ||
+    (user.email === 'admin@vortex.com' || user.email === 'vortexfitnessclub001@gmail.com'
+      ? 'owner'
+      : (user.user_metadata?.role as string) || (user.app_metadata?.role as string) || 'member')
+
   // Access control check: Blocked or Paused accounts cannot access member area
   if (profile?.status === 'blocked') redirect('/suspended?reason=blocked')
   if (profile?.status === 'paused') redirect('/suspended?reason=paused')
 
-  if (profile?.role === 'owner') redirect('/owner/dashboard')
-  if (profile?.role === 'trainer') redirect('/trainer/dashboard')
+  if (role === 'owner') redirect('/owner/dashboard')
+  if (role === 'trainer') redirect('/trainer/dashboard')
 
   return (
     <div className="flex min-h-screen bg-black" suppressHydrationWarning>

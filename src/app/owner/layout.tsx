@@ -14,8 +14,17 @@ export default async function OwnerLayout({ children }: { children: React.ReactN
     .eq('id', user.id)
     .single() as any
 
-  if (profile?.role === 'trainer') redirect('/trainer/dashboard')
-  if (profile?.role === 'member') redirect('/member/dashboard')
+  const isOwner =
+    profile?.role === 'owner' ||
+    user.email === 'admin@vortex.com' ||
+    user.email === 'vortexfitnessclub001@gmail.com' ||
+    user.user_metadata?.role === 'owner' ||
+    user.app_metadata?.role === 'owner'
+
+  if (!isOwner) {
+    if (profile?.role === 'trainer') redirect('/trainer/dashboard')
+    redirect('/member/dashboard')
+  }
 
   return (
     <div className="flex min-h-screen bg-black">

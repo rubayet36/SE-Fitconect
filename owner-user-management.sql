@@ -26,7 +26,18 @@ CREATE INDEX IF NOT EXISTS idx_profiles_role_status ON public.profiles(role, sta
 -- 5. Enable RLS on profiles if not already enabled
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- 6. Self update policy: Users can update their own profile details (bio, specialization, phone, etc.)
+-- 6. Read policy: All authenticated users can view profiles (NON-RECURSIVE, avoids infinite recursion error)
+DROP POLICY IF EXISTS "Owner can view all profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Profiles are viewable by authenticated users" ON public.profiles;
+DROP POLICY IF EXISTS "Profiles viewable by authenticated users" ON public.profiles;
+
+CREATE POLICY "Profiles are viewable by authenticated users"
+ON public.profiles
+FOR SELECT
+TO authenticated
+USING (true);
+
+-- 7. Self update policy: Users can update their own profile details (bio, specialization, phone, etc.)
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile"
 ON public.profiles
@@ -35,35 +46,24 @@ TO authenticated
 USING (id = auth.uid())
 WITH CHECK (id = auth.uid());
 
--- 7. Owner full update policy: Allows owners to modify any user's role and status
+-- 8. Non-recursive security definer function for checking owner privileges
+CREATE OR REPLACE FUNCTION public.is_owner()
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'owner'
+  );
+$$;
+
+-- 9. Owner full update policy: Allows owners to modify any user's role and status without recursion
 DROP POLICY IF EXISTS "Owner can update any profile" ON public.profiles;
 CREATE POLICY "Owner can update any profile"
 ON public.profiles
 FOR UPDATE
 TO authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = auth.uid() AND role = 'owner'
-  )
-)
-WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = auth.uid() AND role = 'owner'
-  )
-);
-
--- 8. Owner read policy: Ensure owners can view all profiles
-DROP POLICY IF EXISTS "Owner can view all profiles" ON public.profiles;
-CREATE POLICY "Owner can view all profiles"
-ON public.profiles
-FOR SELECT
-TO authenticated
-USING (
-  id = auth.uid() OR
-  EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = auth.uid() AND role = 'owner'
-  )
-);
+USING (public.is_owner())
+WITH CHECK (public.is_owner());

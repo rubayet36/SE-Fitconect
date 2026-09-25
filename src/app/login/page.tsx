@@ -61,9 +61,15 @@ export default function LoginPage() {
       .eq('id', user.id)
       .single()
 
+    const role =
+      profile?.role ||
+      (user.email === 'admin@vortex.com' || user.email === 'vortexfitnessclub001@gmail.com'
+        ? 'owner'
+        : (user.user_metadata?.role as string) || (user.app_metadata?.role as string) || 'member')
+
     let dest = '/member/dashboard'
-    if (profile?.role === 'trainer') dest = '/trainer/diet-generator'
-    else if (profile?.role === 'owner') dest = '/owner/dashboard'
+    if (role === 'trainer') dest = '/trainer/diet-generator'
+    else if (role === 'owner') dest = '/owner/dashboard'
 
     router.push(dest)
     router.refresh()

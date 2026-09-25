@@ -18,7 +18,17 @@ export default async function TrainerLayout({ children }: { children: React.Reac
   if (profile?.status === 'blocked') redirect('/suspended?reason=blocked')
   if (profile?.status === 'paused') redirect('/suspended?reason=paused')
 
-  if (profile?.role === 'member') redirect('/member/dashboard')
+  const isOwner =
+    profile?.role === 'owner' ||
+    user.email === 'admin@vortex.com' ||
+    user.email === 'vortexfitnessclub001@gmail.com' ||
+    user.user_metadata?.role === 'owner' ||
+    user.app_metadata?.role === 'owner'
+
+  if (isOwner) redirect('/owner/dashboard')
+
+  const role = profile?.role || (user.user_metadata?.role as string) || (user.app_metadata?.role as string) || 'member'
+  if (role === 'member') redirect('/member/dashboard')
 
   return (
     <div className="flex min-h-screen bg-black" suppressHydrationWarning>
