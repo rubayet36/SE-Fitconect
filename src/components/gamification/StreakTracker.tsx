@@ -1,17 +1,18 @@
 'use client'
 
-type StreakTrackerProps = {
+export type StreakTrackerProps = {
   streakDays: number
-  lastActivityDate: string | null // ISO date string
+  lastActivityDate: string | null
 }
 
 export function StreakTracker({ streakDays, lastActivityDate }: StreakTrackerProps) {
-  // Generate last 7 day labels (oldest → newest, left → right)
+  // Generate last 7 day labels
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
     d.setDate(d.getDate() - (6 - i))
     return {
-      label: d.toLocaleDateString('en-US', { weekday: 'short' }),
+      label: d.toLocaleDateString('en-US', { weekday: 'narrow' }),
+      fullDay: d.toLocaleDateString('en-US', { weekday: 'short' }),
       date: d.toISOString().split('T')[0],
     }
   })
@@ -19,12 +20,12 @@ export function StreakTracker({ streakDays, lastActivityDate }: StreakTrackerPro
   const lastDate = lastActivityDate ? new Date(lastActivityDate) : null
   const today = new Date()
   const daysSinceActivity = lastDate
-    ? Math.floor((today.getTime() - lastDate.getTime()) / 86400000)
+    ? Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24))
     : 999
 
-  // Mark active days: the last `streakDays` consecutive days up to lastActivityDate
+  // Mark active days: backwards from last activity up to streak count
   const activeDays = new Set<string>()
-  if (lastDate) {
+  if (lastDate && streakDays > 0) {
     for (let i = 0; i < streakDays && i < 7; i++) {
       const d = new Date(lastDate)
       d.setDate(d.getDate() - i)
@@ -32,35 +33,29 @@ export function StreakTracker({ streakDays, lastActivityDate }: StreakTrackerPro
     }
   }
 
-  const isActive = daysSinceActivity <= 1
-  const streakLabel = streakDays === 1 ? '1-Day Streak' : `${streakDays}-Day Streak`
-
   return (
     <div className="streak-tracker">
-      <div className="streak-header">
-        <span className="streak-flame" aria-hidden="true">
-          {streakDays > 0 ? '🔥' : '💤'}
-        </span>
-        <span className="streak-count">{streakLabel}</span>
-        {isActive && (
-          <span className="streak-status active" aria-label="Streak is active">
-            Active
-          </span>
+      <div className="streak-header justify-between">
+        <div className="flex items-center gap-2">
+          <span className="streak-flame">{streakDays > 0 ? '🔥' : '💤'}</span>
+          <span className="streak-count">{streakDays} Day{streakDays === 1 ? '' : 's'} Streak</span>
+        </div>
+        {streakDays > 0 && daysSinceActivity <= 1 && (
+          <span className="streak-status active">Active</span>
         )}
       </div>
-
-      <div className="streak-days" role="list" aria-label="Last 7 days activity">
-        {days.map((day, index) => {
-          const completed = activeDays.has(day.date)
+      <div className="streak-days">
+        {days.map((day) => {
+          const isDone = activeDays.has(day.date)
           return (
             <div
               key={day.date}
-              className={`streak-day ${completed ? 'completed' : 'missed'}`}
-              role="listitem"
-              aria-label={`${day.label}: ${completed ? 'completed' : 'missed'}`}
-              style={{ animationDelay: `${index * 60}ms` }}
+              className={`streak-day ${isDone ? 'completed' : 'missed'}`}
+              title={`${day.fullDay}: ${isDone ? 'Workout Completed' : 'Rest/Pending'}`}
             >
-              <div className="day-dot" />
+              <div className="day-dot flex items-center justify-center text-[10px]">
+                {isDone ? '✓' : ''}
+              </div>
               <span className="day-label">{day.label}</span>
             </div>
           )

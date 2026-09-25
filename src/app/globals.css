@@ -127,63 +127,7 @@ body {
   --font-sans: 'Inter', system-ui, sans-serif;
 }
 
-/* Gamification & Leaderboard utilities */
-.rank-gold {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.1) 100%);
-  border-color: rgba(245, 158, 11, 0.5) !important;
-}
-
-.rank-silver {
-  background: linear-gradient(135deg, rgba(203, 213, 225, 0.2) 0%, rgba(148, 163, 184, 0.08) 100%);
-  border-color: rgba(203, 213, 225, 0.4) !important;
-}
-
-.rank-bronze {
-  background: linear-gradient(135deg, rgba(217, 119, 6, 0.2) 0%, rgba(180, 83, 9, 0.08) 100%);
-  border-color: rgba(217, 119, 6, 0.4) !important;
-}
-
-.leaderboard-row {
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, background-color 0.2s ease;
-}
-
-.leaderboard-row:hover {
-  transform: translateX(4px);
-}
-
-@keyframes userGlow {
-  0%, 100% {
-    box-shadow: 0 0 0 1.5px rgba(34, 197, 94, 0.7), 0 0 15px rgba(34, 197, 94, 0.25);
-  }
-  50% {
-    box-shadow: 0 0 0 2px rgba(34, 197, 94, 1), 0 0 25px rgba(34, 197, 94, 0.4);
-  }
-}
-
-.current-user-row {
-  animation: userGlow 2.5s infinite ease-in-out;
-  border-color: rgba(34, 197, 94, 0.8) !important;
-}
-
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-slide-up {
-  animation: slideInUp 0.35s ease-out forwards;
-}
-
-/* ============================
-   PointsToast — Task 2
-   ============================ */
-
+/* ── Gamification Styles ────────────────────────────────────────────── */
 .points-toast {
   position: fixed;
   top: 1.5rem;
@@ -192,19 +136,14 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 163, 74, 0.1));
-  border: 1px solid rgba(34, 197, 94, 0.4);
+  background: linear-gradient(135deg, rgba(34,197,94,0.15), rgba(16,163,74,0.1));
+  border: 1px solid rgba(34,197,94,0.4);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border-radius: 14px;
   padding: 1rem 1.25rem;
-  min-width: 260px;
-  box-shadow: 0 8px 32px rgba(34, 197, 94, 0.2);
-  animation: toastSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-.points-toast--exit {
-  animation: toastSlideOut 0.4s cubic-bezier(0.4, 0, 1, 1) forwards;
+  min-width: 280px;
+  box-shadow: 0 8px 32px rgba(34,197,94,0.25);
+  animation: toastSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes toastSlideIn {
@@ -212,15 +151,9 @@ body {
   to   { opacity: 1; transform: translateX(0) scale(1); }
 }
 
-@keyframes toastSlideOut {
-  from { opacity: 1; transform: translateX(0) scale(1); }
-  to   { opacity: 0; transform: translateX(120%) scale(0.8); }
-}
-
 .toast-icon {
   font-size: 2rem;
   animation: boltPulse 0.6s ease-in-out 2;
-  flex-shrink: 0;
 }
 
 @keyframes boltPulse {
@@ -228,96 +161,29 @@ body {
   50%       { transform: scale(1.3) rotate(-10deg); }
 }
 
-.toast-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.toast-title {
-  font-weight: 700;
-  color: #22c55e;
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-bottom: 0.15rem;
-}
-
-.toast-body {
-  color: #f0fdf4;
-  font-size: 0.95rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.toast-body strong {
-  color: #4ade80;
-  font-weight: 800;
-}
-
-.toast-close {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.35);
-  cursor: pointer;
-  font-size: 0.9rem;
-  padding: 0.2rem;
-  margin-left: auto;
-  flex-shrink: 0;
-  transition: color 0.15s ease, transform 0.15s ease;
-  line-height: 1;
-}
-
-.toast-close:hover {
-  color: white;
-  transform: scale(1.15);
-}
-
-/* ============================
-   BadgeUnlocked — Task 3
-   ============================ */
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-@keyframes fadeOut {
-  from { opacity: 1; }
-  to   { opacity: 0; }
-}
+.toast-title { font-weight: 700; color: #22c55e; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; }
+.toast-body  { color: #f0fdf4; font-size: 0.95rem; }
+.toast-close { background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer; font-size: 1rem; padding: 0; margin-left: auto; }
+.toast-close:hover { color: white; }
 
 .badge-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 10000;
-  background: rgba(0, 0, 0, 0.8);
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(0,0,0,0.85);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: fadeIn 0.2s ease forwards;
-}
-
-.badge-overlay--exit {
-  animation: fadeOut 0.35s ease forwards;
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.2s ease;
 }
 
 .badge-modal {
-  background: linear-gradient(145deg, #1a1a2e, #16213e);
-  border: 2px solid rgba(251, 191, 36, 0.4);
+  background: linear-gradient(145deg, #18181b, #09090b);
+  border: 2px solid rgba(251,191,36,0.4);
   border-radius: 24px;
-  padding: 2.5rem 3rem;
+  padding: 2.5rem 2rem;
   text-align: center;
-  max-width: 400px;
+  max-width: 420px;
   width: 90%;
-  box-shadow: 0 0 60px rgba(251, 191, 36, 0.2);
-  animation: badgePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-.badge-modal--exit {
-  animation: badgePop 0.35s cubic-bezier(0.4, 0, 1, 1) reverse forwards;
+  box-shadow: 0 0 60px rgba(251,191,36,0.25);
+  animation: badgePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes badgePop {
@@ -326,10 +192,9 @@ body {
 }
 
 .badge-emoji-display {
-  font-size: 5rem;
-  display: block;
-  margin: 0.5rem 0;
-  animation: trophySpin 0.6s ease-in-out forwards;
+  font-size: 4.5rem;
+  animation: trophySpin 0.6s ease-in-out;
+  display: block; margin: 0.5rem 0;
 }
 
 @keyframes trophySpin {
@@ -338,194 +203,51 @@ body {
   100% { transform: rotateY(360deg) scale(1); }
 }
 
-.badge-sparkles {
-  font-size: 1.5rem;
-  letter-spacing: 0.5rem;
-  animation: sparkle 1.5s ease-in-out infinite;
-}
+.badge-sparkles { font-size: 1.5rem; animation: sparkle 1.5s ease-in-out infinite; }
+@keyframes sparkle { 0%,100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
 
-@keyframes sparkle {
-  0%, 100% { opacity: 0.4; transform: scale(1); }
-  50%       { opacity: 1;   transform: scale(1.2); }
-}
-
-.badge-title {
-  color: #fbbf24;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin: 0.75rem 0 0.25rem;
-  font-weight: 700;
-}
-
-.badge-name {
-  color: white;
-  font-size: 1.6rem;
-  font-weight: 800;
-  margin: 0.25rem 0;
-}
-
-.badge-description {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.95rem;
-  margin: 0.75rem 0 1.5rem;
-  line-height: 1.5;
-}
-
+.badge-title    { color: #fbbf24; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; margin: 0.5rem 0; font-weight: 700; }
+.badge-name     { color: white; font-size: 1.5rem; font-weight: 800; margin: 0.25rem 0; }
+.badge-description { color: rgba(255,255,255,0.7); font-size: 0.9rem; margin: 0.75rem 0 1.5rem; }
 .badge-dismiss-btn {
   background: linear-gradient(135deg, #fbbf24, #f59e0b);
-  color: #1a1a2e;
-  font-weight: 700;
-  border: none;
-  padding: 0.75rem 2rem;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: 0 4px 20px rgba(251, 191, 36, 0.3);
+  color: #1a1a2e; font-weight: 800; border: none;
+  padding: 0.75rem 2rem; border-radius: 12px; cursor: pointer; font-size: 0.95rem;
+  transition: transform 0.15s ease;
 }
+.badge-dismiss-btn:hover { transform: scale(1.05); }
 
-.badge-dismiss-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 28px rgba(251, 191, 36, 0.5);
-}
+.streak-tracker { background: rgba(255,255,255,0.03); border-radius: 14px; padding: 1rem; border: 1px solid rgba(255,255,255,0.08); }
+.streak-header  { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+.streak-flame   { font-size: 1.4rem; }
+.streak-count   { font-weight: 700; color: white; font-size: 1rem; }
+.streak-status.active { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid #22c55e; border-radius: 99px; padding: 0.1rem 0.5rem; font-size: 0.75rem; font-weight: 600; }
 
-.badge-dismiss-btn:focus-visible {
-  outline: 2px solid #fbbf24;
-  outline-offset: 3px;
-}
-
-/* ============================
-   StreakTracker — Task 4
-   ============================ */
-
-.streak-tracker {
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 12px;
-  padding: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.streak-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.streak-flame {
-  font-size: 1.4rem;
-  animation: flamePulse 2s ease-in-out infinite;
-}
-
-@keyframes flamePulse {
-  0%, 100% { transform: scale(1) rotate(-3deg); }
-  50%       { transform: scale(1.15) rotate(3deg); }
-}
-
-.streak-count {
-  font-weight: 700;
-  color: white;
-  font-size: 1rem;
-}
-
-.streak-status.active {
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
-  border: 1px solid #22c55e;
-  border-radius: 99px;
-  padding: 0.1rem 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  margin-left: auto;
-}
-
-.streak-days {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: space-between;
-}
-
-.streak-day {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.3rem;
-}
+.streak-days { display: flex; gap: 0.4rem; justify-content: space-between; }
+.streak-day  { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; flex: 1; }
 
 .day-dot {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
-  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.1);
+  transition: all 0.3s ease;
 }
-
 .streak-day.completed .day-dot {
   background: linear-gradient(135deg, #22c55e, #16a34a);
   border-color: #22c55e;
-  box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
-  animation: dotPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  box-shadow: 0 0 10px rgba(34,197,94,0.5);
+  animation: dotPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-
-.streak-day.missed .day-dot {
-  background: rgba(255, 255, 255, 0.05);
-}
+.streak-day.missed .day-dot { background: rgba(255,255,255,0.05); }
 
 @keyframes dotPop {
   from { transform: scale(0.5); opacity: 0; }
-  to   { transform: scale(1);   opacity: 1; }
+  to   { transform: scale(1); opacity: 1; }
 }
 
-.day-label {
-  font-size: 0.65rem;
-  color: rgba(255, 255, 255, 0.5);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
+.day-label { font-size: 0.65rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.05em; }
 
-/* ============================
-   RankBadge — Task 5
-   ============================ */
-
-.rank-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  border-radius: 999px;
-  padding: 0.2rem 0.7rem;
-  font-weight: 700;
-  font-size: 0.9rem;
-  white-space: nowrap;
-  transition: transform 0.15s ease;
-}
-
-.rank-badge:hover {
-  transform: scale(1.05);
-}
-
-/* Pill-specific overrides — more specific than the leaderboard row variants */
-.rank-badge.rank-gold {
-  background: linear-gradient(135deg, #ffd700, #ffa500) !important;
-  border-color: transparent !important;
-  color: #1a1a00;
-}
-
-.rank-badge.rank-silver {
-  background: linear-gradient(135deg, #c0c0c0, #a8a8a8) !important;
-  border-color: transparent !important;
-  color: #1a1a1a;
-}
-
-.rank-badge.rank-bronze {
-  background: linear-gradient(135deg, #cd7f32, #a0522d) !important;
-  border-color: transparent !important;
-  color: white;
-}
-
-.rank-badge.rank-default {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
+.rank-badge { display: inline-flex; align-items: center; gap: 0.25rem; border-radius: 999px; padding: 0.2rem 0.65rem; font-weight: 700; font-size: 0.85rem; }
+.rank-gold    { background: linear-gradient(135deg, #ffd700, #ffa500); color: #1a1a00; box-shadow: 0 0 12px rgba(255,215,0,0.3); }
+.rank-silver  { background: linear-gradient(135deg, #e2e8f0, #94a3b8); color: #0f172a; box-shadow: 0 0 12px rgba(203,213,225,0.3); }
+.rank-bronze  { background: linear-gradient(135deg, #f97316, #b45309); color: white; box-shadow: 0 0 12px rgba(249,115,22,0.3); }
+.rank-default { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.12); }

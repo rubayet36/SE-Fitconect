@@ -10,9 +10,13 @@ export default async function TrainerLayout({ children }: { children: React.Reac
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role')
+    .select('full_name, role, status')
     .eq('id', user.id)
     .single() as any
+
+  // Access control check: Blocked or Paused accounts cannot access trainer area
+  if (profile?.status === 'blocked') redirect('/suspended?reason=blocked')
+  if (profile?.status === 'paused') redirect('/suspended?reason=paused')
 
   if (profile?.role === 'member') redirect('/member/dashboard')
 

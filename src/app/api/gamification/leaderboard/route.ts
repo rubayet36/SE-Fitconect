@@ -2,22 +2,11 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 /**
- * GET /api/gamification/leaderboard
- * Returns top 20 members ranked by total_points.
+ * GET /api/gamification/leaderboard?timeframe=alltime|weekly
+ * Returns top 20 members ranked by total_points or weekly_points.
  * Accessible to any authenticated user.
- *
- * Response shape:
- * {
- *   data: Array<{
- *     member_id: string
- *     total_points: number
- *     weekly_points: number
- *     streak_days: number
- *     profiles: { full_name: string | null, avatar_url: string | null }
- *   }>
- * }
  */
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await createClient()
 
   // Authenticate — leaderboard requires login
@@ -26,7 +15,12 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { data, error } = await supabase
+  const { searchParams } = new URL(request.url)
+  const timeframe = searchParams.get('timeframe') === 'weekly' ? 'weekly' : 'alltime'
+  const sortColumn = timeframe === 'weekly' ? 'weekly_points' : 'total_points'
+
+  // Attempt 1: Try join with profiles
+  const { data: joinedData, error: joinError } = await supabase
     .from('member_points')
     .select(`
       total_points,
@@ -36,15 +30,50 @@ export async function GET() {
       member_id,
       last_activity_date,
       updated_at,
-      profiles!inner(full_name, avatar_url)
+      profiles (
+        full_name,
+        avatar_url
+      )
     `)
-    .order('total_points', { ascending: false })
+    .order(sortColumn, { ascending: false })
     .limit(20)
 
-  if (error) {
-    console.error('[leaderboard] Supabase error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  if (!joinError && joinedData) {
+    return NextResponse.json({ data: joinedData, currentUserId: user.id })
   }
 
-  return NextResponse.json({ data })
+  // Fallback if relation join fails: fetch points then profiles separately
+  const { data: pointsData, error: pointsError } = await supabase
+    .from('member_points')
+    .select('*')
+    .order(sortColumn, { ascending: false })
+    .limit(20)
+
+  if (pointsError) {
+    console.error('[leaderboard] Supabase error:', pointsError)
+    return NextResponse.json({ error: pointsError.message }, { status: 500 })
+  }
+
+  const memberIds = (pointsData || []).map((p: any) => p.member_id)
+  let profileMap: Record<string, { full_name: string | null; avatar_url: string | null }> = {}
+
+  if (memberIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, avatar_url')
+      .in('id', memberIds)
+
+    if (profiles) {
+      profileMap = Object.fromEntries(
+        profiles.map((p: any) => [p.id, { full_name: p.full_name, avatar_url: p.avatar_url }])
+      )
+    }
+  }
+
+  const formatted = (pointsData || []).map((p: any) => ({
+    ...p,
+    profiles: profileMap[p.member_id] || { full_name: 'Member', avatar_url: null },
+  }))
+
+  return NextResponse.json({ data: formatted, currentUserId: user.id })
 }

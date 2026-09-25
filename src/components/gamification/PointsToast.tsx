@@ -1,7 +1,8 @@
 'use client'
-import { useEffect, useState } from 'react'
 
-type PointsToastProps = {
+import { useEffect } from 'react'
+
+export type PointsToastProps = {
   points: number
   exerciseName: string
   visible: boolean
@@ -9,41 +10,25 @@ type PointsToastProps = {
 }
 
 export function PointsToast({ points, exerciseName, visible, onDismiss }: PointsToastProps) {
-  const [isExiting, setIsExiting] = useState(false)
-
   useEffect(() => {
     if (visible) {
-      setIsExiting(false)
-      const dismissTimer = setTimeout(() => {
-        setIsExiting(true)
-        // Give the exit animation time to play before calling onDismiss
-        setTimeout(onDismiss, 400)
-      }, 3600)
-      return () => clearTimeout(dismissTimer)
+      const timer = setTimeout(onDismiss, 5000)
+      return () => clearTimeout(timer)
     }
   }, [visible, onDismiss])
-
-  const handleDismiss = () => {
-    setIsExiting(true)
-    setTimeout(onDismiss, 400)
-  }
 
   if (!visible) return null
 
   return (
-    <div
-      className={`points-toast ${isExiting ? 'points-toast--exit' : ''}`}
-      role="alert"
-      aria-live="polite"
-    >
+    <div className="points-toast" role="alert" aria-live="polite">
       <div className="toast-icon">⚡</div>
       <div className="toast-content">
         <div className="toast-title">Points Awarded!</div>
         <div className="toast-body">
-          <strong>+{points} pts</strong> for {exerciseName}
+          <strong className="text-green-400">+{points} pts</strong> for {exerciseName}
         </div>
       </div>
-      <button className="toast-close" onClick={handleDismiss} aria-label="Close">
+      <button className="toast-close" onClick={onDismiss} aria-label="Close">
         ✕
       </button>
     </div>

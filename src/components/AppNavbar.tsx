@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { LogOut, Menu, X, LayoutDashboard, Dumbbell, Salad, Search, Bookmark, ClipboardList, LayoutGrid, ChefHat, FileText, Megaphone, Crown, UserPlus, Clock, Trophy, Activity, CheckSquare, PlusCircle } from 'lucide-react'
+import { LogOut, Menu, X, LayoutDashboard, Dumbbell, Salad, Search, Bookmark, ClipboardList, LayoutGrid, ChefHat, FileText, Megaphone, Crown, UserPlus, Clock, Trophy, Zap, CheckCircle2, User } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
@@ -12,11 +12,11 @@ interface NavItem { label: string; href: string; icon: string; lucide: React.Com
 
 const memberNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/member/dashboard', icon: '🏠', lucide: LayoutDashboard },
-  { label: 'Log Workout', href: '/member/log-exercise', icon: '⚡', lucide: PlusCircle },
+  { label: 'Log Workout', href: '/member/log-exercise', icon: '⚡', lucide: Zap },
+  { label: 'Leaderboard', href: '/member/leaderboard', icon: '🏆', lucide: Trophy },
+  { label: 'Activity Log', href: '/member/activity-log', icon: '📜', lucide: ClipboardList },
   { label: 'My Plan', href: '/member/my-plan', icon: '💪', lucide: Dumbbell },
   { label: 'Diet', href: '/member/diet', icon: '🥗', lucide: Salad },
-  { label: 'Leaderboard', href: '/member/leaderboard', icon: '🏆', lucide: Trophy },
-  { label: 'My Activity', href: '/member/activity-log', icon: '📈', lucide: Activity },
   { label: 'Explore', href: '/member/explore', icon: '🔍', lucide: Search },
   { label: 'Bookmarks', href: '/member/bookmarks', icon: '🔖', lucide: Bookmark },
   { label: 'Request Plan', href: '/member/request', icon: '📋', lucide: ClipboardList },
@@ -24,11 +24,12 @@ const memberNavItems: NavItem[] = [
 
 const trainerNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/trainer/dashboard', icon: '🏠', lucide: LayoutGrid },
-  { label: 'Approvals', href: '/trainer/approvals', icon: '📋', lucide: CheckSquare },
+  { label: 'Approvals', href: '/trainer/approvals', icon: '⚡', lucide: CheckCircle2 },
   { label: 'Workout Builder', href: '/trainer/workout-builder', icon: '🏋️', lucide: Dumbbell },
   { label: 'Diet Generator', href: '/trainer/diet-generator', icon: '🥣', lucide: ChefHat },
   { label: 'Templates', href: '/trainer/templates', icon: '📄', lucide: FileText },
   { label: 'Billboard', href: '/trainer/billboard', icon: '📢', lucide: Megaphone },
+  { label: 'My Profile', href: '/trainer/profile', icon: '👤', lucide: User },
 ]
 
 const ownerNavItems: NavItem[] = [
