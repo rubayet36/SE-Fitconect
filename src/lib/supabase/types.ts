@@ -9,6 +9,7 @@ export type Database = {
           email: string
           full_name: string | null
           role: 'member' | 'trainer' | 'owner'
+          status: 'active' | 'paused' | 'blocked'
           avatar_url: string | null
           phone: string | null
           user_id_code: string | null
@@ -21,6 +22,7 @@ export type Database = {
           email: string
           full_name?: string | null
           role?: 'member' | 'trainer' | 'owner'
+          status?: 'active' | 'paused' | 'blocked'
           avatar_url?: string | null
           phone?: string | null
           user_id_code?: string | null
@@ -33,6 +35,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           role?: 'member' | 'trainer' | 'owner'
+          status?: 'active' | 'paused' | 'blocked'
           avatar_url?: string | null
           phone?: string | null
           user_id_code?: string | null

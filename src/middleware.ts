@@ -29,12 +29,19 @@ export async function middleware(request: NextRequest) {
   if (user && (pathname === '/login' || pathname === '/signup' || pathname === '/')) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, status')
       .eq('id', user.id)
       .single()
 
+    if (profile?.status === 'blocked') {
+      return NextResponse.redirect(new URL('/suspended?reason=blocked', request.url))
+    }
+    if (profile?.status === 'paused') {
+      return NextResponse.redirect(new URL('/suspended?reason=paused', request.url))
+    }
+
     let redirectTo = '/member/dashboard'
-    if (profile?.role === 'trainer') redirectTo = '/trainer/diet-generator'
+    if (profile?.role === 'trainer') redirectTo = '/trainer/dashboard'
     else if (profile?.role === 'owner') redirectTo = '/owner/dashboard'
 
     return NextResponse.redirect(new URL(redirectTo, request.url))

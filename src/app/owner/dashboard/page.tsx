@@ -20,6 +20,13 @@ import {
   Zap,
   ChevronRight,
   TrendingUp,
+  Search,
+  ShieldAlert,
+  PauseCircle,
+  PlayCircle,
+  UserCheck,
+  UserX,
+  Filter,
 } from 'lucide-react'
 
 // ──────────────────────────────────────────────
@@ -30,8 +37,10 @@ interface Profile {
   id: string
   full_name: string | null
   email: string
-  role: string
+  role: 'member' | 'trainer' | 'owner'
+  status: 'active' | 'paused' | 'blocked'
   avatar_url: string | null
+  user_id_code: string | null
   created_at: string
 }
 
@@ -114,6 +123,11 @@ export default function OwnerDashboard() {
   const [requests, setRequests] = useState<Request[]>([])
   const [loading, setLoading] = useState(true)
 
+  // User management state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [userTab, setUserTab] = useState<'all' | 'member' | 'trainer' | 'suspended'>('all')
+  const [actionUserId, setActionUserId] = useState<string | null>(null)
+
   // ── Load data ──────────────────────────────
 
   const loadData = useCallback(async () => {
@@ -122,7 +136,7 @@ export default function OwnerDashboard() {
       const [profilesRes, requestsRes] = await Promise.all([
         supabase
           .from('profiles')
-          .select('id, full_name, email, role, avatar_url, created_at')
+          .select('id, full_name, email, role, status, avatar_url, user_id_code, created_at')
           .order('created_at', { ascending: false }),
         supabase
           .from('requests')
@@ -134,23 +148,125 @@ export default function OwnerDashboard() {
       if (profilesRes.error) toast.error('Failed to load profiles')
       if (requestsRes.error) toast.error('Failed to load requests')
 
-      setProfiles((profilesRes.data as Profile[]) || [])
+      const sanitizedProfiles = (profilesRes.data || []).map((p: any) => ({
+        ...p,
+        status: p.status || 'active',
+      }))
+
+      setProfiles(sanitizedProfiles as Profile[])
       setRequests((requestsRes.data as any) || [])
     } finally {
       setLoading(false)
     }
   }, [supabase])
 
-  useEffect(() => { loadData() }, [loadData])
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   // ── Derived state ──────────────────────────
 
   const members = useMemo(() => profiles.filter(p => p.role === 'member'), [profiles])
   const trainers = useMemo(() => profiles.filter(p => p.role === 'trainer'), [profiles])
+  const suspendedUsers = useMemo(() => profiles.filter(p => p.status === 'paused' || p.status === 'blocked'), [profiles])
   const pendingRequests = useMemo(() => requests.filter(r => r.status === 'pending'), [requests])
   const inProgressRequests = useMemo(() => requests.filter(r => r.status === 'in_progress'), [requests])
   const completedRequests = useMemo(() => requests.filter(r => r.status === 'completed'), [requests])
   const recentRequests = useMemo(() => requests.slice(0, 8), [requests])
+
+  // Filtered users for User Management Table
+  const filteredUsers = useMemo(() => {
+    return profiles.filter((user) => {
+      // Exclude the owner from modification
+      if (user.role === 'owner') return false
+
+      // Tab filter
+      if (userTab === 'member' && user.role !== 'member') return false
+      if (userTab === 'trainer' && user.role !== 'trainer') return false
+      if (userTab === 'suspended' && user.status === 'active') return false
+
+      // Search query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase()
+        const nameMatch = (user.full_name || '').toLowerCase().includes(q)
+        const emailMatch = user.email.toLowerCase().includes(q)
+        const codeMatch = (user.user_id_code || '').toLowerCase().includes(q)
+        return nameMatch || emailMatch || codeMatch
+      }
+
+      return true
+    })
+  }, [profiles, userTab, searchQuery])
+
+  // ── User Management Action Handlers ─────────
+
+  async function handleRoleChange(userId: string, newRole: 'member' | 'trainer') {
+    setActionUserId(userId)
+    try {
+      const res = await fetch('/api/owner/manage-user', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          action: 'update_role',
+          role: newRole,
+        }),
+      })
+
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to update user role')
+
+      toast.success(
+        newRole === 'trainer'
+          ? 'User promoted to Trainer! They now have access to Trainer HQ.'
+          : 'User role changed to Member.'
+      )
+
+      setProfiles((prev) =>
+        prev.map((p) => (p.id === userId ? { ...p, role: newRole } : p))
+      )
+    } catch (err: any) {
+      console.error(err)
+      toast.error(err.message || 'Action failed')
+    } finally {
+      setActionUserId(null)
+    }
+  }
+
+  async function handleStatusChange(userId: string, newStatus: 'active' | 'paused' | 'blocked') {
+    setActionUserId(userId)
+    try {
+      const res = await fetch('/api/owner/manage-user', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          action: 'update_status',
+          status: newStatus,
+        }),
+      })
+
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to update access status')
+
+      toast.success(
+        newStatus === 'active'
+          ? 'Access restored. User account is now active.'
+          : newStatus === 'paused'
+          ? 'User membership access paused.'
+          : 'User account has been blocked.'
+      )
+
+      setProfiles((prev) =>
+        prev.map((p) => (p.id === userId ? { ...p, status: newStatus } : p))
+      )
+    } catch (err: any) {
+      console.error(err)
+      toast.error(err.message || 'Action failed')
+    } finally {
+      setActionUserId(null)
+    }
+  }
 
   // Trainer stats: how many requests each trainer has
   const trainerStats = useMemo(() => {
@@ -169,8 +285,7 @@ export default function OwnerDashboard() {
   // ── Render ─────────────────────────────────
 
   return (
-    <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6">
-
+    <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-8">
       {/* Page header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
@@ -179,12 +294,14 @@ export default function OwnerDashboard() {
             Owner HQ
           </p>
           <h1 className="text-2xl lg:text-3xl font-black text-white mt-1.5">Gym Command Center</h1>
-          <p className="text-zinc-600 text-sm mt-1">Overview of all members, trainers, and requests</p>
+          <p className="text-zinc-500 text-sm mt-1">
+            Manage athlete memberships, trainer assignments, and access privileges.
+          </p>
         </div>
         <button
           onClick={loadData}
           disabled={loading}
-          className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:border-zinc-600 transition-all disabled:opacity-50"
+          className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:border-zinc-600 transition-all disabled:opacity-50 cursor-pointer"
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
         </button>
@@ -194,9 +311,9 @@ export default function OwnerDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Total Members', value: members.length, icon: Users, bg: 'from-zinc-900 to-zinc-950', border: 'border-zinc-800', color: 'text-white', dot: 'bg-zinc-500', iconBg: 'bg-zinc-800' },
-          { label: 'Total Trainers', value: trainers.length, icon: Crown, bg: 'from-violet-950/30 to-zinc-950', border: 'border-violet-900/40', color: 'text-violet-400', dot: 'bg-violet-500', iconBg: 'bg-violet-950/50' },
+          { label: 'Active Trainers', value: trainers.length, icon: Crown, bg: 'from-violet-950/30 to-zinc-950', border: 'border-violet-900/40', color: 'text-violet-400', dot: 'bg-violet-500', iconBg: 'bg-violet-950/50' },
+          { label: 'Paused / Blocked', value: suspendedUsers.length, icon: ShieldAlert, bg: 'from-amber-950/30 to-zinc-950', border: 'border-amber-900/40', color: 'text-amber-400', dot: 'bg-amber-500', iconBg: 'bg-amber-950/50' },
           { label: 'Pending Requests', value: pendingRequests.length, icon: Inbox, bg: 'from-blue-950/30 to-zinc-950', border: 'border-blue-900/40', color: 'text-blue-400', dot: 'bg-blue-500', iconBg: 'bg-blue-950/50' },
-          { label: 'Completed Plans', value: completedRequests.length, icon: CheckCircle2, bg: 'from-emerald-950/30 to-zinc-950', border: 'border-emerald-900/40', color: 'text-emerald-400', dot: 'bg-emerald-500', iconBg: 'bg-emerald-950/50' },
         ].map(stat => {
           const Icon = stat.icon
           return (
@@ -209,7 +326,7 @@ export default function OwnerDashboard() {
                 ? <div className="h-9 w-12 bg-zinc-800 rounded animate-pulse" />
                 : <div className={`text-3xl font-black ${stat.color}`}>{stat.value}</div>
               }
-              <div className="text-xs text-zinc-600 font-semibold mt-1">{stat.label}</div>
+              <div className="text-xs text-zinc-500 font-semibold mt-1">{stat.label}</div>
             </div>
           )
         })}
@@ -221,7 +338,7 @@ export default function OwnerDashboard() {
           href="/owner/create-trainer"
           className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-sm rounded-xl transition-all shadow-[0_0_15px_rgba(225,29,29,0.3)] hover:shadow-[0_0_25px_rgba(225,29,29,0.4)]"
         >
-          <UserPlus size={15} /> Add Trainer
+          <UserPlus size={15} /> Add Trainer Directly
         </Link>
         <Link
           href="/owner/billboard"
@@ -235,6 +352,196 @@ export default function OwnerDashboard() {
         >
           <Clock size={15} /> Timetable
         </Link>
+      </div>
+
+      {/* ── USER & TRAINER ACCOUNT MANAGEMENT SECTION ──────────────────────── */}
+      <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 lg:p-8 space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-black text-white flex items-center gap-2">
+              <Users size={20} className="text-red-500" />
+              User & Trainer Account Management
+            </h2>
+            <p className="text-zinc-500 text-xs mt-1">
+              Promote regular members to trainers with one click, or freeze/block access when needed.
+            </p>
+          </div>
+
+          {/* Search bar */}
+          <div className="relative min-w-[260px]">
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Search user by name or email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-zinc-900 border border-zinc-800 focus:border-red-500 focus:ring-1 focus:ring-red-500 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-zinc-600 transition-all outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-zinc-900">
+          {[
+            { id: 'all', label: `All Users (${profiles.filter(p => p.role !== 'owner').length})` },
+            { id: 'member', label: `Members (${members.length})` },
+            { id: 'trainer', label: `Trainers (${trainers.length})` },
+            { id: 'suspended', label: `Paused / Blocked (${suspendedUsers.length})` },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setUserTab(tab.id as any)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
+                userTab === tab.id
+                  ? 'bg-zinc-900 text-white border border-zinc-700'
+                  : 'text-zinc-500 hover:text-white'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Users Table / List */}
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-20 bg-zinc-900 border border-zinc-800/80 rounded-2xl animate-pulse" />
+            ))}
+          </div>
+        ) : filteredUsers.length === 0 ? (
+          <div className="p-12 border border-dashed border-zinc-800 rounded-2xl text-center space-y-2">
+            <p className="text-3xl">🔍</p>
+            <p className="text-white font-bold text-sm">No users match this criteria</p>
+            <p className="text-zinc-600 text-xs">Try clearing your search query or selecting a different tab filter.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-zinc-900">
+            {filteredUsers.map((user) => {
+              const isTrainer = user.role === 'trainer'
+              const isSuspended = user.status === 'paused' || user.status === 'blocked'
+              const isProcessing = actionUserId === user.id
+
+              return (
+                <div
+                  key={user.id}
+                  className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-zinc-900/30 px-3 rounded-2xl transition-all"
+                >
+                  {/* User info */}
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div
+                      className={`w-11 h-11 rounded-xl bg-gradient-to-br ${getAvatarColor(
+                        user.id
+                      )} flex items-center justify-center font-black text-white text-sm shrink-0 shadow-lg select-none`}
+                    >
+                      {getInitials(user.full_name, user.email)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-white text-sm truncate">
+                          {user.full_name || 'Unnamed Athlete'}
+                        </span>
+
+                        {/* Role Badge */}
+                        <span
+                          className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                            isTrainer
+                              ? 'bg-violet-950/60 text-violet-300 border border-violet-800/50'
+                              : 'bg-zinc-900 text-zinc-400 border border-zinc-800'
+                          }`}
+                        >
+                          {user.role}
+                        </span>
+
+                        {/* Status Badge */}
+                        <span
+                          className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 ${
+                            user.status === 'active'
+                              ? 'bg-green-950/40 text-green-400 border border-green-800/40'
+                              : user.status === 'paused'
+                              ? 'bg-amber-950/40 text-amber-400 border border-amber-800/40'
+                              : 'bg-red-950/40 text-red-400 border border-red-800/40'
+                          }`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              user.status === 'active'
+                                ? 'bg-green-500'
+                                : user.status === 'paused'
+                                ? 'bg-amber-500'
+                                : 'bg-red-500'
+                            }`}
+                          />
+                          {user.status}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-zinc-500 truncate mt-0.5">{user.email}</p>
+                      {user.user_id_code && (
+                        <p className="text-[11px] font-mono text-zinc-600">ID: {user.user_id_code}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions Buttons */}
+                  <div className="flex items-center gap-2 shrink-0 self-start md:self-auto flex-wrap">
+                    {/* Role Promotion / Demotion */}
+                    {isTrainer ? (
+                      <button
+                        onClick={() => handleRoleChange(user.id, 'member')}
+                        disabled={isProcessing}
+                        title="Demote this trainer back to normal member"
+                        className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl text-xs font-semibold transition-all border border-zinc-800 flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                      >
+                        <UserX size={13} /> Set as Member
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleRoleChange(user.id, 'trainer')}
+                        disabled={isProcessing}
+                        title="Promote this member to Trainer"
+                        className="px-3 py-1.5 bg-violet-600/20 hover:bg-violet-600/40 text-violet-300 border border-violet-700/50 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                      >
+                        <Crown size={13} className="text-yellow-400" /> Make Trainer
+                      </button>
+                    )}
+
+                    {/* Access Status Controls */}
+                    {user.status === 'active' ? (
+                      <>
+                        <button
+                          onClick={() => handleStatusChange(user.id, 'paused')}
+                          disabled={isProcessing}
+                          title="Temporarily pause gym access"
+                          className="px-3 py-1.5 bg-amber-950/20 hover:bg-amber-900/40 text-amber-400 border border-amber-800/40 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                        >
+                          <PauseCircle size={13} /> Pause
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange(user.id, 'blocked')}
+                          disabled={isProcessing}
+                          title="Block account access"
+                          className="px-3 py-1.5 bg-red-950/20 hover:bg-red-900/40 text-red-400 border border-red-800/40 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                        >
+                          <ShieldAlert size={13} /> Block
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => handleStatusChange(user.id, 'active')}
+                        disabled={isProcessing}
+                        title="Restore active access to this user"
+                        className="px-3 py-1.5 bg-green-600/20 hover:bg-green-600/40 text-green-400 border border-green-700/50 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                      >
+                        <PlayCircle size={13} /> Activate Access
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Request Distribution Mini Bar */}
@@ -280,7 +587,6 @@ export default function OwnerDashboard() {
 
       {/* Two-column layout: Trainers + Recent Requests */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-
         {/* Trainers Roster — 2 cols */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
@@ -308,7 +614,7 @@ export default function OwnerDashboard() {
             <div className="border border-dashed border-zinc-800 rounded-2xl p-10 text-center">
               <Crown size={32} className="text-zinc-800 mx-auto mb-3" />
               <p className="text-zinc-600 font-semibold text-sm">No trainers yet</p>
-              <p className="text-zinc-700 text-xs mt-1">Add your first trainer via the button above</p>
+              <p className="text-zinc-700 text-xs mt-1">Promote a user above or add a trainer</p>
             </div>
           ) : (
             <div className="space-y-3">
