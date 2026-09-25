@@ -81,7 +81,7 @@ export function DashboardHeader({ initialName, greeting }: Props) {
         /* ── View mode ── */
         <div className="flex items-center gap-3 mt-1">
           <h1 className="text-3xl font-black text-white">
-            {name.split(' ')[0] || 'Athlete'}
+            {name || 'Member'}
           </h1>
           <button
             onClick={() => { setDraft(name); setEditing(true) }}

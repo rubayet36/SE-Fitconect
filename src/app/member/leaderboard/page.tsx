@@ -141,7 +141,7 @@ export default function LeaderboardPage() {
                       Rank #2 • Silver
                     </span>
                     <h3 className="text-lg font-bold text-white truncate px-2">
-                      {top3[1].profiles?.full_name || 'Athlete'}
+                      {top3[1].profiles?.full_name || 'Member'}
                     </h3>
                   </div>
                   <div className="pt-2 border-t border-slate-800/60 flex items-center justify-around text-xs">
@@ -171,7 +171,7 @@ export default function LeaderboardPage() {
                     🥇 #1 Champion
                   </div>
                   <h3 className="text-xl font-black text-white truncate px-2">
-                    {top3[0].profiles?.full_name || 'Athlete'}
+                    {top3[0].profiles?.full_name || 'Member'}
                   </h3>
                 </div>
                 <div className="pt-3 border-t border-amber-950/60 flex items-center justify-around text-xs">
@@ -199,7 +199,7 @@ export default function LeaderboardPage() {
                       Rank #3 • Bronze
                     </span>
                     <h3 className="text-lg font-bold text-white truncate px-2">
-                      {top3[2].profiles?.full_name || 'Athlete'}
+                      {top3[2].profiles?.full_name || 'Member'}
                     </h3>
                   </div>
                   <div className="pt-2 border-t border-orange-950/60 flex items-center justify-around text-xs">

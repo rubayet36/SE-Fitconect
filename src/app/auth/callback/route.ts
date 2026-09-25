@@ -34,14 +34,9 @@ export async function GET(request: Request) {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role, user_id_code')
+          .select('role')
           .eq('id', user.id)
           .single()
-
-        // If no gym member ID yet → send to setup-profile
-        if (!profile?.user_id_code && profile?.role === 'member') {
-          return NextResponse.redirect(`${origin}/setup-profile`)
-        }
 
         const dest =
           profile?.role === 'owner'

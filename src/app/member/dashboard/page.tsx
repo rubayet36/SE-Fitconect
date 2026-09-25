@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { PushOptIn } from '@/components/PushOptIn'
-import { MemberIdGate } from '@/components/MemberIdGate'
 import { DashboardHeader } from '@/components/DashboardHeader'
 import { StreakTracker, RankBadge, MemberRealtimeNotifier } from '@/components/gamification'
 import Link from 'next/link'
@@ -31,6 +30,20 @@ export default async function MemberDashboard() {
   ])
 
   const profile = profileRes.data as { full_name: string | null; user_id_code: string | null } | null
+
+  // Resolve user display name from profiles, auth metadata, or email
+  const userName =
+    profile?.full_name?.trim() ||
+    (user?.user_metadata?.full_name as string)?.trim() ||
+    (user?.user_metadata?.name as string)?.trim() ||
+    (user?.email ? user.email.split('@')[0] : '') ||
+    'Member'
+
+  // If DB full_name was empty, backfill it so it persists
+  if (user && !profile?.full_name && userName && userName !== 'Member') {
+    await supabase.from('profiles').update({ full_name: userName }).eq('id', user.id)
+  }
+
   const myRequests: any[] = (requestsRes.data as any) || []
   const routines: any[] = (routinesRes.data as any) || []
   const gymNotices: { id: string; title: string; body: string; type: 'info' | 'warning' | 'success'; created_at: string }[] = (noticesRes.data as any) || []
@@ -65,12 +78,10 @@ export default async function MemberDashboard() {
     <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-8">
       {user && <PushOptIn userId={user.id} />}
       {user && <MemberRealtimeNotifier userId={user.id} />}
-      {/* Member ID gate — shows popup if user_id_code is missing */}
-      <MemberIdGate />
       
       {/* Header */}
       <DashboardHeader
-        initialName={profile?.full_name || 'Athlete'}
+        initialName={userName}
         greeting={greeting}
       />
 
